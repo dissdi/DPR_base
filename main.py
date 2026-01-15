@@ -41,7 +41,7 @@ def run(config):
     trainer = Trainer(
         model=model,
         args=args,
-        train_dataset=load_nq_dataset(r"C:\\Users\\iksdg\\dpr\\dpr_base\\downloads\\data\\nq-train"),
+        train_dataset=load_nq_dataset(config["train"]["dataset_path"]),
         # eval_dataset=load_nq_dataset(r"downloads\\data\\retriever\\nq-dev.json"),
         data_collator=collate_fn,
     )
