@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     ds = ds.map(nq_preprocess,
                 batched=True,
-                batch_size=64,
+                batch_size=512,
                 num_proc=6,
                 remove_columns=ds.column_names)
 
