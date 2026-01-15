@@ -1,8 +1,8 @@
 device: cuda
 seed: 42
+dataset_path: C:\\Users\\iksdg\\dpr\\dpr_base\\downloads\\data\\nq-train
 
 train:
-  dataset_path: C:\\Users\\iksdg\\dpr\\dpr_base\\downloads\\data\\nq-train
   output_dir: ./output/b32_small_hn
   save_strategy: epoch
   learning_rate: 1e-5
