@@ -5,73 +5,68 @@ from tqdm import tqdm
 from dprdataset.nqdataset import read_tsv
 from models import DPR, BaseTokenizer
 from safetensors.torch import load_model
-from datetime import datetime
-
-def log(msg: str) -> None:
-    ts = datetime.now().strftime("%m/%d %H:%M:%S")
-    print(f"[{ts}] : {msg}", flush=True)
 
 if __name__ == "__main__":
-    BATCH_SIZE = 256
-    STEP = 150
-    ivf_data_path = 'faiss/ivfdata'
-    loader = read_tsv(r"downloads\data\wikipedia_split\psgs_w100.tsv", BATCH_SIZE)
+    BATCH_SIZE = 256 # Passage encode batch size
+    STEP = 128 # Total training sample count is calculated by STEP * BATCH_SIZE.
+    MODEL_PATH = r"output\b32_small_hn\checkpoint-4680\model.safetensors" # Should be safetensor
+    FAISS_INDEX_PATH = r"output\faiss.index" # To save path
+    PSGS_PATH = r"downloads\data\psgs_w100.tsv" # Passages path (should be tsv file)
+    nlist = 4096 # IVF parameter
 
     model = DPR()
-    load_model(model, r"output\b32_small_hn\checkpoint-4680\model.safetensors")
+    load_model(model, MODEL_PATH)
     model.to("cuda")
 
     model.eval()
-    model = torch.compile(model)
 
-    log("Start encoding passages for train")
+    print(f"Start encode passages for train")
 
+    qaunt = faiss.IndexFlatIP(768) # Bert CLS Token dim \wo L2 norm (IP = Inner Product)
+    index = faiss.IndexIVFFlat(qaunt, 768, nlist, faiss.METRIC_INNER_PRODUCT) # IVF needs train
+
+    loader = read_tsv(PSGS_PATH, BATCH_SIZE)
     with torch.no_grad():
         p_embs = []
-        for steps, batch in enumerate(tqdm(loader, desc="Encoding passages for train", total=STEP, unit="batch"), start=1):
-            p_token = BaseTokenizer([item["text"] for item in batch], max_length=256, padding="max_length", truncation=True,
+        for steps, batch in enumerate(tqdm(loader, desc="Encoding passages for train", total=STEP, unit="batch"), start=0):
+            titles = [item["title"] for item in batch]
+            texts = [item["text"] for item in batch]
+            p_token = BaseTokenizer(titles, texts, max_length=256, padding="max_length", truncation=True,
                                     return_tensors="pt").to("cuda")
-            with torch.amp.autocast("cuda", dtype=torch.bfloat16):
-                emb = model.encode_passage(**p_token)
-            p_embs.append(emb.float().cpu())
-            if steps == STEP:
+            emb = model.encode_passage(**p_token)
+            p_embs.append(emb.cpu())
+            if steps + 1 >= STEP:
                 break
         loader.close()
+
+    print("Start IVF index train")
+
     p_embs = torch.cat(p_embs, dim=0)
+    x_train = p_embs.numpy().astype(np.float32)
+    index.train(x_train)
 
-    quant = faiss.IndexFlatIP(768)
-    nlist = 512
-    m = 64
-    bits = 8
-    index = faiss.IndexIVFFlat(quant, 768, nlist, faiss.METRIC_INNER_PRODUCT)
-    
-    log("Train faiss IVFPQ")
+    print("IVF index train done.")
 
-    p_embs_np = p_embs.numpy().astype(np.float32, copy=False)
-    index.train(p_embs_np)
+    print("Start build IVF index")
 
-    log("Train done.")
-    
-    #ram이 아닌 disk에서 faiss 실행
-    invlists = faiss.OnDiskInvertedLists(index.nlist, index.code_size, ivf_data_path)
+    # \w ChatGPT
+    inv = faiss.OnDiskInvertedLists(nlist, index.code_size, "ivf_lists.ondisk")
+    index.replace_invlists(inv)
 
-    log("Build faiss IVFPQ")
-
-    log("Start encoding passages")
-
-    loader = read_tsv(r"downloads\data\wikipedia_split\psgs_w100.tsv", BATCH_SIZE)
+    loader = read_tsv(PSGS_PATH, BATCH_SIZE)
     with torch.no_grad():
         for steps, batch in enumerate(tqdm(loader, desc="Encoding passages", unit="batch"),
-                                      start=1):
-            p_token = BaseTokenizer([item["text"] for item in batch], max_length=256, padding="max_length",
-                                    truncation=True,
+                                      start=0):
+            titles = [item["title"] for item in batch]
+            texts = [item["text"] for item in batch]
+            p_token = BaseTokenizer(titles, texts, max_length=256, padding="max_length", truncation=True,
                                     return_tensors="pt").to("cuda")
-            with torch.amp.autocast("cuda", dtype=torch.bfloat16):
-                emb = model.encode_passage(**p_token)
-            X = emb.float().cpu()
+
+            emb = model.encode_passage(**p_token)
+            X = emb.cpu().numpy().astype(np.float32)
             I = np.asarray([item["id"] for item in batch], dtype=np.int64)
             index.add_with_ids(X, I)
         loader.close()
 
-    faiss.write_index(index, "./data/b32_small_hn.index")
-    log("Save faiss index to disk")
+    faiss.write_index(index, FAISS_INDEX_PATH)
+    print("Save faiss index to disk")
