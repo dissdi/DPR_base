@@ -4,3 +4,5 @@ downloads/
 **.log
 output/
 outputs/
+
+*.out
