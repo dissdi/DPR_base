@@ -3,7 +3,7 @@ import torch.nn as nn
 from transformers import AutoModel
 
 
-class DPR(nn.Module):
+class DPR_alcls(nn.Module):
     def __init__(self, loss_fn=None):
         super().__init__()
         self.q_encoder = AutoModel.from_pretrained("bert-base-uncased")
