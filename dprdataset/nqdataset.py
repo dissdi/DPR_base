@@ -58,5 +58,20 @@ def collate_fn(batch):
         "hn_token_type_ids": hn_token_type_ids,
     }
 
+def valid_collate_fn(batch):
+    q_input_ids = _batch_to_tensor([item["query"]["input_ids"] for item in batch])
+    q_token_type_ids = _batch_to_tensor([item["query"]["token_type_ids"] for item in batch])
+    q_attention_mask = _batch_to_tensor([item["query"]["attention_mask"] for item in batch])
+
+    passage_ids = [[int(passage["passage_id"]) for passage in item["positive_passages"]] for item in batch]
+    padded_passage_ids = [sublist + [-1] * (128 - len(sublist)) for sublist in passage_ids]
+
+    return {
+        "q_input_ids": q_input_ids,
+        "q_attention_mask": q_attention_mask,
+        "q_token_type_ids": q_token_type_ids,
+        "passage_ids": padded_passage_ids,
+    }
+
 def load_nq_dataset(file_path: str) -> Dataset:
     return load_from_disk(file_path)
