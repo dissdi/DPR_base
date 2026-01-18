@@ -5,6 +5,7 @@ from datasets import Dataset
 
 from models import BaseTokenizer
 
+
 def nq_generator(file_path: str):
     with open(file_path, 'rb') as f:
         for item in ijson.items(f, 'item'):
@@ -40,7 +41,7 @@ def nq_generator(file_path: str):
 
 
 def nq_preprocess(batch):
-    questions  = batch["question"]
+    questions = batch["question"]
     p_ctxs_batch = batch["positive_ctxs"]
     hn_ctxs_batch = batch["hard_negative_ctxs"]
 
@@ -49,7 +50,8 @@ def nq_preprocess(batch):
     neg_passages_batch = []
 
     for q, pos_ctxs, neg_ctxs in zip(questions, p_ctxs_batch, hn_ctxs_batch):
-        q_token = BaseTokenizer(q, max_length=64, padding="max_length", truncation=True)
+        q_token = BaseTokenizer(
+            q, max_length=64, padding="max_length", truncation=True)
 
         pos_passages = []
         neg_passages = []
@@ -59,14 +61,16 @@ def nq_preprocess(batch):
         # neg_ctxs = neg_ctxs[:min(len(neg_ctxs), 4)]
 
         for ctx in pos_ctxs:
-            p_token = BaseTokenizer(ctx["title"], ctx["text"], max_length=256, padding="max_length", truncation=True)
+            p_token = BaseTokenizer(
+                ctx["title"], ctx["text"], max_length=256, padding="max_length", truncation=True)
             pos_passages.append({
                 "passage_id": ctx["passage_id"],
                 "token": p_token
             })
 
         for ctx in neg_ctxs:
-            p_token = BaseTokenizer(ctx["title"], ctx["text"], max_length=256, padding="max_length", truncation=True)
+            p_token = BaseTokenizer(
+                ctx["title"], ctx["text"], max_length=256, padding="max_length", truncation=True)
             neg_passages.append({
                 "passage_id": ctx["passage_id"],
                 "token": p_token
@@ -82,8 +86,10 @@ def nq_preprocess(batch):
         "negative_passages": neg_passages_batch,
     }
 
+
 if __name__ == "__main__":
-    ds = Dataset.from_generator(nq_generator, gen_kwargs={"file_path": r"C:\\Users\\iksdg\\dpr\\dpr_base\\downloads\\data\\retriever\\nq-train.json"})
+    ds = Dataset.from_generator(nq_generator, gen_kwargs={
+                                "file_path": 'downloads/data/retriever/nq-dev.json'})
 
     ds = ds.map(nq_preprocess,
                 batched=True,
@@ -91,6 +97,6 @@ if __name__ == "__main__":
                 num_proc=6,
                 remove_columns=ds.column_names)
 
-    ds.save_to_disk(r"C:\\Users\\iksdg\\dpr\\dpr_base\\downloads\\data\\nq-train")
+    ds.save_to_disk('downloads/data/nq-dev')
 
     print("Done.")
