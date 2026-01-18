@@ -39,9 +39,12 @@ def run(config):
     model = DPR()
     model.to(device)
     log.info("Model built successfully.")
+    
+    output_dir = HydraConfig.get().runtime.output_dir
 
     args = TrainingArguments(
         **config["train"],
+        output_dir=output_dir,
         report_to=[],
         log_level="info",
         )
