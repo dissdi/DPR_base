@@ -7,6 +7,7 @@ import transformers
 from models import DPR
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
+from models.FastTrackModel import LossLambdaScheduler
 
 log = logging.getLogger(__name__)
 results = []  # multi run시 결과 한눈에 보기 위해 사용
@@ -48,12 +49,18 @@ def run(config):
         report_to=[],
         log_level="info",
         )
+    
+    lambda_callback = LossLambdaScheduler(
+        max_lambda=config["loss_lambda"]["max_lambda"],
+        warmup_steps=config["loss_lambda"]["warmup_steps"]
+    )
 
     trainer = Trainer(
         model=model,
         args=args,
         train_dataset=load_nq_dataset(config["dataset_path"]),
         data_collator=collate_fn,
+        callbacks=[lambda_callback]
     )
 
     trainer.train()
