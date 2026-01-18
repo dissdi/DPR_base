@@ -22,6 +22,7 @@ def nq_generator(file_path: str):
                     "title": ctx["title"],
                     "text": ctx["text"],
                     "passage_id": ctx["passage_id"],
+                    "score": float(ctx["score"]),
                 })
 
             if len(hard_neg_ctxs) == 0:
@@ -30,10 +31,11 @@ def nq_generator(file_path: str):
                     "title": ctx["title"],
                     "text": ctx["text"],
                     "passage_id": ctx["passage_id"],
+                    "score": float(ctx["score"]),
                 })
 
             # Sort negatives in descending order (hard negatives with high scores are more challenging)
-            hard_neg_ctxs.sort(key=lambda x: float(x["score"]), reverse=True)
+            hard_neg_ctxs.sort(key=lambda x: x["score"], reverse=True)
 
             yield {
                 "question": item["question"],
