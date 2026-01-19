@@ -40,8 +40,8 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 256):
 
 
 if __name__ == "__main__":
-    FAISS_INDEX_PATH = 'output/faiss.index'
-    MODEL_PATH = "output/b32_small_hn/checkpoint-6900/model.safetensors"
+    FAISS_INDEX_PATH = 'faiss/faiss.index'
+    MODEL_PATH = "output/b32_small_hn/checkpoint-13800/model.safetensors"
     DATASET_PATH = "downloads/data/nq-dev"
     BATCH_SIZE = 256
     Ks = [1, 5, 20, 100]

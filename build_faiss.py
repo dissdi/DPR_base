@@ -8,10 +8,10 @@ from models import DPR, BaseTokenizer
 from safetensors.torch import load_model
 
 if __name__ == "__main__":
-    output_path = Path("output")
+    output_path = Path("faiss")
     BATCH_SIZE = 512 # Passage encode batch size
     STEP = 800 # Total training sample count is calculated by STEP * BATCH_SIZE.
-    MODEL_PATH = 'output/b32_small_hn/checkpoint-6900/model.safetensors'
+    MODEL_PATH = 'output/b32_small_hn/checkpoint-13800/model.safetensors'
     FAISS_INDEX_PATH = output_path / "faiss.index" # To save path
     PSGS_PATH = "downloads/data/wikipedia_split/psgs_w100.tsv" # Passages path (should be tsv file)
     nlist = 4096 # IVF parameter
