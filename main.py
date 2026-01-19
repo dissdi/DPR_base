@@ -3,6 +3,7 @@ import hydra
 from hydra.core.hydra_config import HydraConfig
 import logging
 from models import DPR
+from models import CMCLS_model
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
 
@@ -29,7 +30,7 @@ def run(config):
     log.info(f"Using device: {device}")
     set_seed(config.seed)
 
-    model = DPR()
+    model = CMCLS_model()
     model.to(device)
     log.info("Model built successfully.")
 
