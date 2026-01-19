@@ -15,15 +15,13 @@ class DPR(nn.Module):
         outputs = self.q_encoder(input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
-            return_dict=True)
-        return outputs.last_hidden_state[:, 0, :]
+            return_dict=True).last_hidden_state[:, 0, :]
 
     def encode_passage(self, input_ids = None, attention_mask = None, token_type_ids = None):
         outputs =self.p_encoder(input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
-            return_dict=True)
-        return outputs.last_hidden_state[:, 0, :]
+            return_dict=True).last_hidden_state[:, 0, :]
 
     def forward(self, 
                 q_input_ids = None, q_attention_mask = None, q_token_type_ids = None,
