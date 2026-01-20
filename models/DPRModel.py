@@ -4,24 +4,30 @@ from transformers import AutoModel
 
 
 class DPR(nn.Module):
-    def __init__(self, loss_fn = None):
+    def __init__(self, loss_fn = None, dropout_prob = 0.1):
         super().__init__()
         self.q_encoder = AutoModel.from_pretrained("bert-base-uncased")
         self.p_encoder = AutoModel.from_pretrained("bert-base-uncased")
 
         self.loss_fn = loss_fn if loss_fn is not None else nn.CrossEntropyLoss()
+        
+        self.dropout = nn.Dropout(dropout_prob)
 
     def encode_query(self, input_ids = None, attention_mask = None, token_type_ids = None):
-        return self.q_encoder(input_ids=input_ids,
+        out = self.q_encoder(input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True).last_hidden_state[:, 0, :]
+        out = self.dropout(out)
+        return out
 
     def encode_passage(self, input_ids = None, attention_mask = None, token_type_ids = None):
-        return self.p_encoder(input_ids=input_ids,
+        out =  self.p_encoder(input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True).last_hidden_state[:, 0, :]
+        out = self.dropout(out)
+        return out
 
     def forward(self, 
                 q_input_ids = None, q_attention_mask = None, q_token_type_ids = None,
