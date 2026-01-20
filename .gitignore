@@ -5,3 +5,5 @@ downloads/
 output/
 outputs/
 *.out
+faiss
+importants
