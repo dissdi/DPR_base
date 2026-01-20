@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 import torch
 import faiss
@@ -7,12 +8,14 @@ from models import DPR, BaseTokenizer
 from safetensors.torch import load_model
 
 if __name__ == "__main__":
-    BATCH_SIZE = 256 # Passage encode batch size
-    STEP = 128 # Total training sample count is calculated by STEP * BATCH_SIZE.
-    MODEL_PATH = r"output\b32_small_hn\checkpoint-4680\model.safetensors" # Should be safetensor
-    FAISS_INDEX_PATH = r"output\faiss.index" # To save path
-    PSGS_PATH = r"downloads\data\psgs_w100.tsv" # Passages path (should be tsv file)
+    output_path = Path("faiss")
+    BATCH_SIZE = 512 # Passage encode batch size
+    STEP = 800 # Total training sample count is calculated by STEP * BATCH_SIZE.
+    MODEL_PATH = 'outputs/2026-01-19/12-52-33/checkpoint-13800/model.safetensors'
+    FAISS_INDEX_PATH = output_path / "faiss.index" # To save path
+    PSGS_PATH = "downloads/data/wikipedia_split/psgs_w100.tsv" # Passages path (should be tsv file)
     nlist = 4096 # IVF parameter
+
 
     model = DPR()
     load_model(model, MODEL_PATH)
@@ -50,7 +53,7 @@ if __name__ == "__main__":
     print("Start build IVF index")
 
     # \w ChatGPT
-    inv = faiss.OnDiskInvertedLists(nlist, index.code_size, "ivf_lists.ondisk")
+    inv = faiss.OnDiskInvertedLists(nlist, index.code_size, str(output_path / "ivf_lists.ondisk"))
     index.replace_invlists(inv)
 
     loader = read_tsv(PSGS_PATH, BATCH_SIZE)
@@ -68,5 +71,5 @@ if __name__ == "__main__":
             index.add_with_ids(X, I)
         loader.close()
 
-    faiss.write_index(index, FAISS_INDEX_PATH)
+    faiss.write_index(index, str(FAISS_INDEX_PATH))
     print("Save faiss index to disk")

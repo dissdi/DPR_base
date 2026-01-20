@@ -20,6 +20,7 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 256):
         recall = 0
         N = 0
         for step, batch in enumerate(tqdm.tqdm(dataloader, desc=f"Benchmark Recall@{k}", unit="batch")):
+            #print(batch.keys())
             q_ids = batch["q_input_ids"].to("cuda")
             q_mask = batch["q_attention_mask"].to("cuda")
             q_token_ids = batch["q_token_type_ids"].to("cuda")
@@ -39,11 +40,11 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 256):
 
 
 if __name__ == "__main__":
-    FAISS_INDEX_PATH = "./output/faiss.index"
-    MODEL_PATH = "./output/~~/model.safetensors"
-    DATASET_PATH = "./data/raw_data/nq-dev"
+    FAISS_INDEX_PATH = 'faiss/faiss.index'
+    MODEL_PATH = "outputs/2026-01-19/12-52-33/checkpoint-13800/model.safetensors"
+    DATASET_PATH = "downloads/data/nq-dev"
     BATCH_SIZE = 256
-    Ks = [5, 20, 50, 100]
+    Ks = [1, 5, 20, 100]
     NPROBE = 64 # IVF parameter
 
     print("Benchmark Recall@K")

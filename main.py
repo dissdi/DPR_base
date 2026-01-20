@@ -2,6 +2,8 @@ import torch
 import hydra
 from hydra.core.hydra_config import HydraConfig
 import logging
+
+import transformers
 from models import DPR
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
@@ -25,6 +27,11 @@ def set_seed(seed):
 
 @hydra.main(config_path="configs", version_base=None)
 def run(config):
+    
+    tf_logger = logging.getLogger("transformers")
+    tf_logger.setLevel(logging.INFO)
+    tf_logger.propagate = True
+    
     device = torch.device(config.device)
     log.info(f"Using device: {device}")
     set_seed(config.seed)
@@ -32,10 +39,14 @@ def run(config):
     model = DPR()
     model.to(device)
     log.info("Model built successfully.")
+    
+    output_dir = HydraConfig.get().runtime.output_dir
 
     args = TrainingArguments(
         **config["train"],
-        report_to=[]
+        output_dir=output_dir,
+        report_to=[],
+        log_level="info",
         )
 
     trainer = Trainer(
