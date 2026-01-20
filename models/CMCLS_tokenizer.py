@@ -36,7 +36,14 @@ class CMCLS_tokenizer(nn.Module):
             token_type_ids[0].insert(idx, 0)
             mcls_positions.append(idx)
             
-        last = len(input_ids[0]) - 1
+        # SEP token insert
+        last = None
+        for i, val in enumerate(input_ids[0]):
+            if val == pad_id:
+                last = i
+                break
+        if last == None:
+            last = len(input_ids[0]) - 1
         input_ids[0][last] = sep_id
         attention_mask[0][last] = 1
         token_type_ids[0][last] = 0
@@ -45,9 +52,9 @@ class CMCLS_tokenizer(nn.Module):
         input_ids = input_ids[0][:max_length]
         attention_mask = attention_mask[0][:max_length]
         token_type_ids = token_type_ids[0][:max_length]
-        mcls_positions = [pos for pos in mcls_positions if pos < max_length]          
+        mcls_positions = [pos for pos in mcls_positions if pos < last]
         
-        return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions}
+        return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions, "last":last}
     
 if __name__ == "__main__":
     tokenizer = CMCLS_tokenizer()
@@ -65,8 +72,8 @@ if __name__ == "__main__":
             print("ERROR, mcls pos does not match with other list")
         else:
             print(f"{pos}th element matches")
-    last = len(input_ids_list)
-    print(f"last is SEP = {tokenizer.tokenizer.sep_token_id == input_ids_list[last-1]}")
+    last = out1["last"]
+    print(f"last is SEP = {tokenizer.tokenizer.sep_token_id == input_ids_list[last]}")
     
     input_ids_list = out2["input_ids"]
     mcls_positions = out2["mcls_positions"]
@@ -75,7 +82,7 @@ if __name__ == "__main__":
             print("ERROR, mcls pos does not match with other list")
         else:
             print(f"{pos}th element matches")
-    last = len(input_ids_list)
-    print(f"last is SEP = {tokenizer.tokenizer.sep_token_id == input_ids_list[last-1]}")
+    last = out2["last"]
+    print(f"last is SEP = {tokenizer.tokenizer.sep_token_id == input_ids_list[last]}")
        
     print("Test complete")
