@@ -6,7 +6,7 @@ benchmark: true
 
 train:
   save_strategy: epoch
-  save_total_limit: 3
+  save_total_limit: 1
   learning_rate: 1e-5
   optim: adamw_torch_fused
   lr_scheduler_type: linear
