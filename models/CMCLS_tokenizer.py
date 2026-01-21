@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 from transformers import AutoTokenizer
 
-def get_last_position(input_ids, sep_id):
-    for i, val in reversed(list(enumerate(input_ids))):
-        if val == sep_id:
+def special_token_pos(input_ids, token_id):
+    for i, val in enumerate(input_ids):
+        if val == token_id:
             return i
-    return len(input_ids)-1
+    return len(input_ids)
 
 class CMCLS_tokenizer(nn.Module):
     def __init__(self):
@@ -31,15 +31,15 @@ class CMCLS_tokenizer(nn.Module):
         token_type_ids = token_type_ids[0][:max_length]
         
         # mcls values
-        cls_id = self.tokenizer.cls_token_id
         mcls_positions = [0]
-        mcls_mask = [1]
+        mcls_mask = torch.tensor([True], dtype=torch.bool)
         
         return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions, "mcls_mask": mcls_mask}
     
     def p_tokenize(self, text_a, text_b=None, max_length=256, padding="max_length", truncation=True):
         cls_id = self.tokenizer.cls_token_id
         pad_id = self.tokenizer.pad_token_id
+        sep_id = self.tokenizer.sep_token_id
         
         # number of special tokens to be inserted
         indexes = [i*max_length//10 for i in range(1, 10, 1)]
@@ -59,13 +59,14 @@ class CMCLS_tokenizer(nn.Module):
         token_type_ids = tokens["token_type_ids"].tolist()
         
         # CLS token insert
+        sep_token_pos = special_token_pos(input_ids[0], sep_id)
         for idx in reversed(indexes):
             input_ids[0].insert(idx, cls_id)
             attention_mask[0].insert(idx, 1)
-            if idx==0:
-                token_type_ids[0].insert(idx, token_type_ids[0][0])
+            if idx > sep_token_pos:
+                token_type_ids[0].insert(idx, 1)
             else:
-                token_type_ids[0].insert(idx, token_type_ids[0][idx-1])
+                token_type_ids[0].insert(idx, 0)
             
         # truncate max length
         input_ids = input_ids[0][:max_length]
@@ -73,24 +74,20 @@ class CMCLS_tokenizer(nn.Module):
         token_type_ids = token_type_ids[0][:max_length]
         
         # CLS after PAD should be 0
-        pad_start_pos = max_length-1
-        for i, val in enumerate(input_ids):
-            if val == pad_id:
-                pad_start_pos = i-1
-                break
+        pad_token_pos = special_token_pos(input_ids, pad_id)
         for pos in indexes:
-            if input_ids[pos] == pad_id:
-                attention_mask[pos] = 0
-            else:
+            if pos < pad_token_pos:
                 attention_mask[pos] = 1
+            else:
+                attention_mask[pos] = 0
                 
         # mcls values
         mcls_positions = [0] + indexes
-        mcls_mask = [0 for _ in range(len(mcls_positions))]
+        mcls_mask = [False for _ in range(len(mcls_positions))]
         for i, pos in enumerate(mcls_positions):
             if input_ids[pos] == cls_id and attention_mask[pos] == 1:
-                mcls_mask[i] = 1
-        
+                mcls_mask[i] = True
+        mcls_mask = torch.tensor(mcls_mask, dtype=torch.bool)
         return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions, "mcls_mask": mcls_mask}
     
 if __name__ == "__main__":

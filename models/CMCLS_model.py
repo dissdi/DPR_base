@@ -50,7 +50,8 @@ class DPR(nn.Module):
             hn_emb, hn_mask = self.encode_passage(hn_input_ids, hn_attention_mask, hn_token_type_ids, hn_mcls_positions, hn_mcls_mask)
             p_emb = torch.cat([p_emb, hn_emb], dim=0)
             p_mask = torch.cat([p_mask, hn_mask], dim=0)
-
+        q_mask, p_mask = q_mask.to(q_emb.device), p_mask.to(q_emb.device)
+        
         # batch, passage length
         B = q_emb.size(0)
         P = p_emb.size(0)

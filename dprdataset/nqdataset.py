@@ -31,16 +31,16 @@ def collate_fn(batch):
     q_input_ids= _batch_to_tensor([item["query"]["input_ids"] for item in batch])
     q_token_type_ids= _batch_to_tensor([item["query"]["token_type_ids"] for item in batch])
     q_attention_mask = _batch_to_tensor([item["query"]["attention_mask"] for item in batch])
-    q_mcls_positions = torch.stack([item["query"]["mcls_positions"] for item in batch])
-    q_mcls_mask = torch.stack([item["query"]["mcls_mask"] for item in batch])
+    q_mcls_positions = _batch_to_tensor([item["query"]["mcls_positions"] for item in batch])
+    q_mcls_mask = _batch_to_tensor([item["query"]["mcls_mask"] for item in batch])
 
     chosen = [random.choice(item["positive_passages"]) for item in batch]
 
     p_input_ids = _batch_to_tensor([item["token"]["input_ids"] for item in chosen])
     p_token_type_ids= _batch_to_tensor([item["token"]["token_type_ids"] for item in chosen])
     p_attention_mask = _batch_to_tensor([item["token"]["attention_mask"] for item in chosen])
-    p_mcls_positions = torch.stakc([item["token"]["mcls_positions"] for item in chosen])
-    p_mcls_mask = torch.stack(_batch_to_tensor([item["token"]["mcls_mask"] for item in chosen]))
+    p_mcls_positions = _batch_to_tensor([item["token"]["mcls_positions"] for item in chosen])
+    p_mcls_mask = _batch_to_tensor([item["token"]["mcls_mask"] for item in chosen])
     
     # use most challenging hard-neg
     chosen = [item["negative_passages"][0] for item in batch]
@@ -48,9 +48,9 @@ def collate_fn(batch):
     hn_input_ids = _batch_to_tensor([item["token"]["input_ids"] for item in chosen])
     hn_token_type_ids = _batch_to_tensor([item["token"]["token_type_ids"] for item in chosen])
     hn_attention_mask = _batch_to_tensor([item["token"]["attention_mask"] for item in chosen])
-    hn_mcls_positions = torch.stakc([item["token"]["mcls_positions"] for item in chosen])
-    hn_mcls_mask = torch.stack(_batch_to_tensor([item["token"]["mcls_mask"] for item in chosen])
-)    
+    hn_mcls_positions = _batch_to_tensor([item["token"]["mcls_positions"] for item in chosen])
+    hn_mcls_mask = _batch_to_tensor([item["token"]["mcls_mask"] for item in chosen])
+
     return {
         "q_input_ids": q_input_ids,
         "q_attention_mask": q_attention_mask,
