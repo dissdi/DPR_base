@@ -29,12 +29,17 @@ class CMCLS_tokenizer(nn.Module):
         input_ids = input_ids[0][:max_length]
         attention_mask = attention_mask[0][:max_length]
         token_type_ids = token_type_ids[0][:max_length]
-        mcls_positions = [0]
         
-        return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions}
+        # mcls values
+        cls_id = self.tokenizer.cls_token_id
+        mcls_positions = [0]
+        mcls_mask = [1]
+        
+        return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions, "mcls_mask": mcls_mask}
     
     def p_tokenize(self, text_a, text_b=None, max_length=256, padding="max_length", truncation=True):
         cls_id = self.tokenizer.cls_token_id
+        pad_id = self.tokenizer.pad_token_id
         
         # number of special tokens to be inserted
         indexes = [i*max_length//10 for i in range(1, 10, 1)]
@@ -66,11 +71,27 @@ class CMCLS_tokenizer(nn.Module):
         input_ids = input_ids[0][:max_length]
         attention_mask = attention_mask[0][:max_length]
         token_type_ids = token_type_ids[0][:max_length]
-  
-        last = get_last_position(input_ids, self.tokenizer.sep_token_id)
-        mcls_positions = [pos for pos, val in enumerate(input_ids) if val == cls_id and pos <= last]
         
-        return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions}
+        # CLS after PAD should be 0
+        pad_start_pos = max_length-1
+        for i, val in enumerate(input_ids):
+            if val == pad_id:
+                pad_start_pos = i-1
+                break
+        for pos in indexes:
+            if input_ids[pos] == pad_id:
+                attention_mask[pos] = 0
+            else:
+                attention_mask[pos] = 1
+                
+        # mcls values
+        mcls_positions = [0] + indexes
+        mcls_mask = [0 for _ in range(len(mcls_positions))]
+        for i, pos in enumerate(mcls_positions):
+            if input_ids[pos] == cls_id and attention_mask[pos] == 1:
+                mcls_mask[i] = 1
+        
+        return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions, "mcls_mask": mcls_mask}
     
 if __name__ == "__main__":
     # Test code
