@@ -56,12 +56,12 @@ class FastDPR(nn.Module):
         self.loss_fn = loss_fn if loss_fn is not None else nn.CrossEntropyLoss()
     
     def encode_query_origin(self, input_ids = None, attention_mask = None, token_type_ids = None):
-        return self.base_model(input_ids=input_ids,
+        return self.base_model.encode_query(input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids)
 
     def encode_passage(self, input_ids = None, attention_mask = None, token_type_ids = None):
-        return self.base_model(input_ids=input_ids,
+        return self.base_model.encode_passage(input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids)
         

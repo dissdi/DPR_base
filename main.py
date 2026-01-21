@@ -1,5 +1,6 @@
 from pathlib import Path
 import faiss
+from sklearn import base
 import torch
 import hydra
 from hydra.core.hydra_config import HydraConfig
@@ -7,6 +8,7 @@ import logging
 
 import transformers
 from models import DPR
+from models import FastTrackModel
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
 from models.FastTrackModel import LossLambdaScheduler
@@ -45,7 +47,10 @@ def run(config):
     log.info(f"Using device: {device}")
     set_seed(config.seed)
 
-    model = DPR()
+    base_model = DPR()
+    tiny_model = FastTrackModel.TinyModel()
+
+    model = FastTrackModel.FastDPR(base_model=base_model, tiny_model=tiny_model)
     model.to(device)
     log.info("Model built successfully.")
     

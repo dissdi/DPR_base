@@ -1,3 +1,4 @@
+project_name: dpr_fasttrack
 device: cuda
 seed: 42
 dataset_path: ./downloads/data/nq-train
@@ -27,3 +28,7 @@ train:
 loss_lambda:
   max_lambda: 0.3
   warmup_steps: 1000
+
+hydra:
+  run:
+    dir: ./projects/${project_name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
