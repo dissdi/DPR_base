@@ -6,6 +6,7 @@ from hydra.core.hydra_config import HydraConfig
 import logging
 
 import transformers
+
 from models import DPR
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
@@ -70,6 +71,11 @@ def run(config):
     log.info(f"Training completed. Last checkpoint: {last_checkpoint}")
 
     if config.benchmark:
+        del model
+        del trainer
+        del args
+        torch.cuda.empty_cache()
+        
         with_benchmark(Path(last_checkpoint))
 
 
