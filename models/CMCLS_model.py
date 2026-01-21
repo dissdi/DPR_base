@@ -76,7 +76,7 @@ class DPR(nn.Module):
                 # get top k, bottom l
                 n = pair_flat.numel()
                 k = max(4*n//10, 1)
-                l = min(8*n//10, n)
+                l = max(min(8*n//10, n), 1)
                 
                 top_sum = torch.topk(pair_flat, k, dim=0, largest=True, sorted=True, out=None).sum()
                 bottom_sum = torch.topk(pair_flat, l, dim=0, largest=False, sorted=True, out=None).sum()

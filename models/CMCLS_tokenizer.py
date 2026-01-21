@@ -60,7 +60,7 @@ class CMCLS_tokenizer(nn.Module):
         
         # CLS token insert
         sep_token_pos = special_token_pos(input_ids[0], sep_id)
-        for idx in reversed(indexes):
+        for idx in indexes:
             input_ids[0].insert(idx, cls_id)
             attention_mask[0].insert(idx, 1)
             if idx > sep_token_pos:
@@ -74,7 +74,7 @@ class CMCLS_tokenizer(nn.Module):
         token_type_ids = token_type_ids[0][:max_length]
         
         # CLS after PAD should be 0
-        pad_token_pos = special_token_pos(input_ids, pad_id)
+        pad_token_pos = special_token_pos(attention_mask, 0)
         for pos in indexes:
             if pos < pad_token_pos:
                 attention_mask[pos] = 1
@@ -95,26 +95,24 @@ if __name__ == "__main__":
     tokenizer = CMCLS_tokenizer()
     ta = "big little lies season 2 how many episodes"
     tb = "Does He Love You \"Does He Love You\" is a song written by Sandy Knox and Billy Stritch, and recorded as a duet by American country music artists Reba McEntire and Linda Davis. It was released in August 1993 as the first single from Reba's album \"Greatest Hits Volume Two\". It is one of country music's several songs about a love triangle. \"Does He Love You\" was written in 1982 by Billy Stritch. He recorded it with a trio in which he performed at the time, because he wanted a song that could be sung by the other two members"
-    
+
     out1 = tokenizer.q_tokenize(ta, max_length=256, padding="max_length", truncation=True)
-    print(len(out1["input_ids"]), len(out1["attention_mask"]), len(out1["token_type_ids"]), len(out1["mcls_positions"]))
+    print(len(out1["input_ids"]), len(out1["attention_mask"]), len(out1["token_type_ids"]), len(out1["mcls_positions"]), len(out1["mcls_mask"]), sum(out1["attention_mask"]))
+    print(out1["mcls_mask"])
     input_ids_list = out1["input_ids"]
     mcls_positions = out1["mcls_positions"]
-    for pos in mcls_positions:
-        if tokenizer.tokenizer.cls_token_id != input_ids_list[pos]:
-            print("ERROR, mcls pos does not match with other list")
-        else:
-            print(f"{pos}th element is CLS?: {tokenizer.tokenizer.cls_token_id == input_ids_list[pos]}")
+    mcls_mask = out1["mcls_mask"]
+    for i, pos in enumerate(mcls_positions):
+        print(f"pos:{pos} token_id:{input_ids_list[pos]} mask:{mcls_mask[i]} ")
+    
     
     print()
     out2 = tokenizer.p_tokenize(ta, tb, max_length=256, padding="max_length", truncation=True)
-    print(len(out2["input_ids"]), len(out2["attention_mask"]), len(out2["token_type_ids"]), len(out2["mcls_positions"]))
+    print(len(out2["input_ids"]), len(out2["attention_mask"]), len(out2["token_type_ids"]), len(out2["mcls_positions"]), len(out2["mcls_mask"]), sum(out2["attention_mask"]))
+    print(out2["mcls_mask"])
     input_ids_list = out2["input_ids"]
     mcls_positions = out2["mcls_positions"]
-    for pos in mcls_positions:
-        if tokenizer.tokenizer.cls_token_id != input_ids_list[pos]:
-            print("ERROR, mcls pos does not match with other list")
-        else:
-            print(f"{pos}th element is CLS?: {tokenizer.tokenizer.cls_token_id == input_ids_list[pos]}")
-       
-    print("Test complete")
+    mcls_mask = out2["mcls_mask"]
+    for i, pos in enumerate(mcls_positions):
+        print(f"pos:{pos} token_id:{input_ids_list[pos]} mask:{mcls_mask[i]} ")
+            
