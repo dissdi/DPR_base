@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import AutoModel
-
+import torch.nn.functional as F
 
 class DPR(nn.Module):
     def __init__(self, loss_fn = None):
@@ -43,8 +43,8 @@ class DPR(nn.Module):
                 labels = None, return_loss=True):
 
         # query, passage encode
-        q_mcls = self.encode_query(q_input_ids, q_attention_mask, q_token_type_ids, mcls_positions)
-        p_mcls = self.encode_passage(p_input_ids, p_attention_mask, p_token_type_ids, mcls_positions)
+        q_emb = self.encode_query(q_input_ids, q_attention_mask, q_token_type_ids, mcls_positions)
+        p_emb = self.encode_passage(p_input_ids, p_attention_mask, p_token_type_ids, mcls_positions)
 
         # if hard-negative is given encode negative and concat p_emb, hn_emb
         if hn_input_ids is not None:
@@ -62,7 +62,7 @@ class DPR(nn.Module):
         
         # good score and bad score
         n = sim_list.numel()
-        k = max(3*n//10, 1)
+        k = max(4*n//10, 1)
         l = min(8*n//10, n-1)
         top = sim_list[:k].sum()
         bottom = sim_list[l:].sum()
