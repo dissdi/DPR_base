@@ -23,6 +23,7 @@ def nq_generator(file_path: str):
                     "title": ctx["title"],
                     "text": ctx["text"],
                     "passage_id": ctx["passage_id"],
+                    "score": float(ctx["score"]),
                 })
 
             if len(hard_neg_ctxs) == 0:
@@ -31,7 +32,11 @@ def nq_generator(file_path: str):
                     "title": ctx["title"],
                     "text": ctx["text"],
                     "passage_id": ctx["passage_id"],
+                    "score": float(ctx["score"]),
                 })
+
+            # Sort negatives in descending order (hard negatives with high scores are more challenging)
+            hard_neg_ctxs.sort(key=lambda x: x["score"], reverse=True)
 
             yield {
                 "question": item["question"],
@@ -88,15 +93,19 @@ def nq_preprocess(batch):
 
 
 if __name__ == "__main__":
-    ds = Dataset.from_generator(nq_generator, gen_kwargs={
-                                "file_path": 'downloads/data/retriever/nq-dev.json'})
+    #python -m datasets.preprocess
+    tragets = ['nq-dev', 'nq-train']
+    for target in tragets:
+        print(f"Preprocessing {target} dataset...")
+        ds = Dataset.from_generator(nq_generator, gen_kwargs={
+                                    "file_path": f'downloads/data/retriever/{target}.json'})
 
-    ds = ds.map(nq_preprocess,
-                batched=True,
-                batch_size=512,
-                num_proc=6,
-                remove_columns=ds.column_names)
+        ds = ds.map(nq_preprocess,
+                    batched=True,
+                    batch_size=512,
+                    num_proc=6,
+                    remove_columns=ds.column_names)
 
-    ds.save_to_disk('downloads/data/nq-dev')
+        ds.save_to_disk(f'downloads/data/{target}')
 
-    print("Done.")
+    print("Done.")  

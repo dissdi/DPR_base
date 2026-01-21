@@ -1,3 +1,5 @@
+from pathlib import Path
+import faiss
 import torch
 import hydra
 from hydra.core.hydra_config import HydraConfig
@@ -8,6 +10,8 @@ from models import DPR
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
 from models.FastTrackModel import LossLambdaScheduler
+
+from transformers.trainer_utils import get_last_checkpoint
 
 log = logging.getLogger(__name__)
 results = []  # multi run시 결과 한눈에 보기 위해 사용
@@ -25,10 +29,14 @@ def set_seed(seed):
     # torch.backends.cudnn.deterministic = True
     # torch.backends.cudnn.benchmark = False
 
+def with_benchmark(checkout_dir):
+    from build_faiss import build_faiss_index
+    faiss_index_path = build_faiss_index(checkout_dir)
+    from faiss_benchmark import benchmark
+    results.append(benchmark(checkout_dir=checkout_dir))
 
 @hydra.main(config_path="configs", version_base=None)
 def run(config):
-    
     tf_logger = logging.getLogger("transformers")
     tf_logger.setLevel(logging.INFO)
     tf_logger.propagate = True
@@ -63,8 +71,15 @@ def run(config):
         callbacks=[lambda_callback]
     )
 
+    last_checkpoint = None
     trainer.train()
+    last_checkpoint = get_last_checkpoint(output_dir)
+    log.info(f"Training completed. Last checkpoint: {last_checkpoint}")
+
+    if config.benchmark:
+        with_benchmark(Path(last_checkpoint))
+
 
 if __name__ == "__main__":
-    run()
+    checkpoint = run()
     log.info(results)

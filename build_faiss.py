@@ -7,14 +7,13 @@ from dprdataset.nqdataset import read_tsv
 from models import DPR, BaseTokenizer
 from safetensors.torch import load_model
 
-if __name__ == "__main__":
-    output_path = Path("output")
-    BATCH_SIZE = 512 # Passage encode batch size
-    STEP = 800 # Total training sample count is calculated by STEP * BATCH_SIZE.
-    MODEL_PATH = 'output/b32_small_hn/checkpoint-6900/model.safetensors'
+def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH="downloads/data/wikipedia_split/psgs_w100.tsv", nlist=4096):
+
+    output_path = check_point_dir/"faiss"
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    MODEL_PATH = check_point_dir / "model.safetensors"
     FAISS_INDEX_PATH = output_path / "faiss.index" # To save path
-    PSGS_PATH = "downloads/data/wikipedia_split/psgs_w100.tsv" # Passages path (should be tsv file)
-    nlist = 4096 # IVF parameter
 
 
     model = DPR()
@@ -73,3 +72,5 @@ if __name__ == "__main__":
 
     faiss.write_index(index, str(FAISS_INDEX_PATH))
     print("Save faiss index to disk")
+
+    return FAISS_INDEX_PATH
