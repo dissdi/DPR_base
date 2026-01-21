@@ -1,3 +1,5 @@
+project_name: dpr_base
+
 device: cuda
 seed: 42
 dataset_path: ./downloads/data/nq-train
@@ -23,3 +25,7 @@ train:
   remove_unused_columns: False
   push_to_hub: False
   save_only_model: True
+
+hydra:
+  run:
+    dir: ./projects/${project_name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
