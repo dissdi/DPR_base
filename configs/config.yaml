@@ -2,6 +2,8 @@ device: cuda
 seed: 42
 dataset_path: ./downloads/data/nq-train
 
+benchmark: true
+
 train:
   save_strategy: epoch
   save_total_limit: 3
