@@ -4,7 +4,7 @@ from hydra.core.hydra_config import HydraConfig
 import logging
 
 import transformers
-from models import DPR
+from models.DPRModel_alcls import DPR_alcls 
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
 
@@ -36,7 +36,7 @@ def run(config):
     log.info(f"Using device: {device}")
     set_seed(config.seed)
 
-    model = DPR()
+    model = DPR_alcls()
     model.to(device)
     log.info("Model built successfully.")
     

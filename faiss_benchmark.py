@@ -37,11 +37,12 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 256):
                     recall += 1
 
         return recall / N
+from models.DPRModel_alcls import DPR_alcls 
 
 
 if __name__ == "__main__":
     FAISS_INDEX_PATH = 'faiss/faiss.index'
-    MODEL_PATH = "outputs/2026-01-19/12-52-33/checkpoint-13800/model.safetensors"
+    MODEL_PATH = "outputs/2026-01-20/20-42-34/checkpoint-13800/model.safetensors"
     DATASET_PATH = "downloads/data/nq-dev"
     BATCH_SIZE = 256
     Ks = [1, 5, 20, 100]
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     index = faiss.read_index(FAISS_INDEX_PATH)
     index.nprobe = NPROBE
 
-    model = DPR()
+    model = DPR_alcls()
     load_model(model, MODEL_PATH)
     model.to("cuda")
 
