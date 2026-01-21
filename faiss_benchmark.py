@@ -1,3 +1,4 @@
+from anyio import Path
 import numpy as np
 import torch
 import tqdm
@@ -40,13 +41,10 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 256):
 from models.DPRModel_alcls import DPR_alcls 
 
 
-if __name__ == "__main__":
-    FAISS_INDEX_PATH = 'faiss/faiss.index'
-    MODEL_PATH = "outputs/2026-01-20/20-42-34/checkpoint-13800/model.safetensors"
-    DATASET_PATH = "downloads/data/nq-dev"
-    BATCH_SIZE = 256
+def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64):
+    FAISS_INDEX_PATH = checkout_dir / "faiss.index"
+    MODEL_PATH = checkout_dir / "model.safetensors"
     Ks = [1, 5, 20, 100]
-    NPROBE = 64 # IVF parameter
 
     print("Benchmark Recall@K")
 
@@ -64,3 +62,4 @@ if __name__ == "__main__":
 
     for k, recall in zip(Ks, results):
         print(f"Recall@{k}: {recall:.3f}", flush=True)
+    return results
