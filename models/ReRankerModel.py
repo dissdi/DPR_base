@@ -30,6 +30,20 @@ class ReRankerDPR(nn.Module):
         self.k = k  # number of top passages to rerank
         self.dpr_loss_fn = dpr_loss_fn if dpr_loss_fn is not None else nn.CrossEntropyLoss()
         self.reranker_loss_fn = reranker_loss_fn if reranker_loss_fn is not None else nn.CrossEntropyLoss()
+
+    def encode_query(self, input_ids, attention_mask, token_type_ids):
+        return self.dpr_model.encode_query(input_ids, attention_mask, token_type_ids)
+    
+    def encode_passage(self, input_ids, attention_mask, token_type_ids):
+        return self.dpr_model.encode_passage(input_ids, attention_mask, token_type_ids)
+    
+    def rerank(self, q_input_ids, q_attention_mask, q_token_type_ids, p_cls_emb):
+        q_emb_all = self.dpr_model.p_encoder(input_ids=q_input_ids,
+            attention_mask=q_attention_mask,
+            token_type_ids=q_token_type_ids,
+            return_dict=True).last_hidden_state
+        scores = self.reranker(q_emb_all, p_cls_emb)
+        return scores
         
     def forward(self, 
                 q_input_ids = None, q_attention_mask = None, q_token_type_ids = None,
