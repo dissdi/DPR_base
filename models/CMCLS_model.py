@@ -19,12 +19,55 @@ class DPR(nn.Module):
         beta = F.softplus(self.beta_raw)
         return alpha, beta
     
+    def gather_positions(self, out, mcls_positions):
+        B, L, H = out.last_hidden_state.shape
+        
+        # (M,), (1,) -> (1, M), (1, 1)
+        if mcls_positions.dim() == 1:
+            mcls_positions = torch.unsqueeze(mcls_positions, dim=0)
+        
+        # match batch (1, M) -> (B, M)
+        pos_B, M = mcls_positions.shape
+        if pos_B == 1 and B > 1:
+            mcls_positions = mcls_positions.expand(B, M)
+            pos_B, M = mcls_positions.shape
+        elif pos_B != B and pos_B != 1:
+            raise ValueError
+        
+        mcls_positions = mcls_positions.to(device=out.last_hidden_state.device, dtype=torch.long)
+        
+        # match shape
+        mcls_positions = torch.unsqueeze(mcls_positions, dim=-1).expand(B, M, H)
+        
+        return out.last_hidden_state.gather(dim=1, index=mcls_positions)
+
+    def _masked_topk_sum(S_flat, mask_flat, k_pair, largest: bool):
+        B, P, D = S_flat.shape
+        device = S_flat.device
+        dtype = S_flat.dtype
+    
+        max_k = int(k_pair.max().item())
+        max_k = min(max_k, D)
+    
+        if largest:
+            filled = S_flat.masked_fill(~mask_flat, float("-inf"))
+            vals = torch.topk(filled, k=max_k, dim=2, largest=True, sorted=False).values  # (B,P,max_k)
+        else:
+            filled = S_flat.masked_fill(~mask_flat, float("inf"))
+            vals = torch.topk(filled, k=max_k, dim=2, largest=False, sorted=False).values  # (B,P,max_k)
+    
+        rank = torch.arange(max_k, device=device).view(1, 1, max_k)               # (1,1,max_k)
+        keep = rank < k_pair.clamp(min=1, max=max_k).unsqueeze(-1)                # (B,P,max_k) bool
+        return (vals.masked_fill(~keep, 0.0)).sum(dim=2)                          # (B,P)
+    
+        
     def encode_query(self, input_ids = None, attention_mask = None, token_type_ids = None, mcls_positions = None, mcls_mask = None):
         out = self.q_encoder(input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True)
-        mcls = out.last_hidden_state[:, mcls_positions, :]
+        mcls = self.gather_positions(out, mcls_positions)
+        mcls_mask = mcls_mask.to(device=out.last_hidden_state.device, dtype=torch.bool)
         return mcls, mcls_mask
         
     def encode_passage(self, input_ids = None, attention_mask = None, token_type_ids = None, mcls_positions = None, mcls_mask = None):
@@ -32,7 +75,8 @@ class DPR(nn.Module):
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True)
-        mcls = out.last_hidden_state[:, mcls_positions, :]
+        mcls = self.gather_positions(out, mcls_positions)
+        mcls_mask = mcls_mask.to(device=out.last_hidden_state.device, dtype=torch.bool)
         return mcls, mcls_mask
 
     def forward(self, 
@@ -61,30 +105,35 @@ class DPR(nn.Module):
         alpha, beta = alpha.to(q_emb.device), beta.to(q_emb.device)
         
         # get similarity
-        sim_list = torch.empty(B, P, device=q_emb.device, dtype=q_emb.dtype)
-        for q_i, q_cls in enumerate(q_emb):
-            for p_i, p_cls in enumerate(p_emb):
-                
-                # dot product
-                pair = q_cls @ p_cls.T
-                
-                # pair masking
-                pair_mask = q_mask[q_i][:, None] & p_mask[p_i][None, :]
-                valid_scores = pair[pair_mask]
-                pair_flat = valid_scores.flatten()
-                
-                # get top k, bottom l
-                n = pair_flat.numel()
-                k = max(4*n//10, 1)
-                l = max(min(8*n//10, n), 1)
-                
-                top_sum = torch.topk(pair_flat, k, dim=0, largest=True, sorted=True, out=None).sum()
-                bottom_sum = torch.topk(pair_flat, l, dim=0, largest=False, sorted=True, out=None).sum()
-                
-                # reinforce good score and bad score
-                score = alpha*top_sum - beta*bottom_sum
-                sim_list[q_i][p_i] = score
+        S = torch.einsum("bih,pjh->bpij", q_emb, p_emb)  # (B,P,Mq,Mp)
 
+        # make pair mask
+        pair_mask = (q_mask[:, None, :, None] & p_mask[None, :, None, :])
+
+        # flatten: (B,P,D)
+        S_flat = S.reshape(B, P, -1)
+        mask_flat = pair_mask.reshape(B, P, -1)
+        
+        
+        nq = q_mask.sum(dim=1).to(torch.long)          # (B,)
+        np_ = p_mask.sum(dim=1).to(torch.long)         # (P,)
+        n_pair = (nq[:, None] * np_[None, :])          # (B,P)
+        valid_pair = n_pair > 0
+        n_safe = n_pair.clamp(min=1)
+
+        k_pair = (4 * n_safe) // 10
+        k_pair = torch.clamp(k_pair, min=1, max=S_flat.size(2))
+
+        l_pair = (8 * n_safe) // 10
+        l_pair = torch.clamp(l_pair, min=1, max=S_flat.size(2)) 
+    
+        top_sum = self._masked_topk_sum(S_flat, mask_flat, k_pair, largest=True)        # (B,P)
+        bottom_sum = self._masked_topk_sum(S_flat, mask_flat, l_pair, largest=False)   # (B,P)
+
+        # reinforce good score and bad score
+        sim_list = alpha * top_sum - beta * bottom_sum                             # (B,P)
+        sim_list = sim_list.masked_fill(~valid_pair, -1e9)  # 혹시 valid=0이면 안전하게
+    
         if labels is None:
             labels = torch.arange(sim_list.size(0), device=sim_list.device)
 

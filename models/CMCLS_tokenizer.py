@@ -31,7 +31,7 @@ class CMCLS_tokenizer(nn.Module):
         token_type_ids = token_type_ids[0][:max_length]
         
         # mcls values
-        mcls_positions = [0]
+        mcls_positions = torch.tensor([0], dtype=torch.int32)
         mcls_mask = torch.tensor([True], dtype=torch.bool)
         
         return {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids, "mcls_positions": mcls_positions, "mcls_mask": mcls_mask}
@@ -82,7 +82,7 @@ class CMCLS_tokenizer(nn.Module):
                 attention_mask[pos] = 0
                 
         # mcls values
-        mcls_positions = [0] + indexes
+        mcls_positions = torch.tensor([0] + indexes, dtype=torch.int32)
         mcls_mask = [False for _ in range(len(mcls_positions))]
         for i, pos in enumerate(mcls_positions):
             if input_ids[pos] == cls_id and attention_mask[pos] == 1:
