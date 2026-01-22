@@ -41,14 +41,14 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 256):
 from models.DPRModel_alcls import DPR_alcls 
 
 
-def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64):
-    FAISS_INDEX_PATH = checkout_dir / "faiss.index"
+def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 768, NPROBE: int = 64):
+    FAISS_INDEX_PATH = checkout_dir / 'faiss' / "faiss.index"
     MODEL_PATH = checkout_dir / "model.safetensors"
     Ks = [1, 5, 20, 100]
 
     print("Benchmark Recall@K")
-
-    index = faiss.read_index(FAISS_INDEX_PATH)
+    print(f"FAISS_INDEX_PATH: {FAISS_INDEX_PATH}")
+    index = faiss.read_index(str(FAISS_INDEX_PATH))
     index.nprobe = NPROBE
 
     model = DPR_alcls()
@@ -63,3 +63,6 @@ def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-
     for k, recall in zip(Ks, results):
         print(f"Recall@{k}: {recall:.3f}", flush=True)
     return results
+
+if __name__ == "__main__":
+    benchmark(Path("projects/dpr_base/2026-01-22/01-03-48/checkpoint-6900"))
