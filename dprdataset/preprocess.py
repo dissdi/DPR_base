@@ -4,9 +4,9 @@ import ijson
 from datasets import Dataset
 
 from models import BaseTokenizer
-from models.CMCLS_tokenizer import CMCLS_tokenizer
+from models.RiskMCLS_tokenizer import RiskMCLS_tokenizer
 
-tokenizer = CMCLS_tokenizer()
+tokenizer = RiskMCLS_tokenizer()
 
 def nq_generator(file_path: str):
     with open(file_path, 'rb') as f:

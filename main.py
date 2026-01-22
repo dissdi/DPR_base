@@ -45,7 +45,7 @@ def run(config):
     log.info(f"Using device: {device}")
     set_seed(config.seed)
 
-    model = DPR()
+    model = RiskMCLS_model()
     model.to(device)
     log.info("Model built successfully.")
     
