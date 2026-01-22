@@ -126,21 +126,25 @@ class DPR(nn.Module):
         valid_pair = n_pair > 0 
         n_safe = n_pair.clamp(min=1) 
 
+        # top k pair
         k_pair = (4 * n_safe) // 10
         k_pair = torch.clamp(k_pair, min=1, max=S_flat.size(2))
 
+        # bottom l pair
         l_pair = (2 * n_safe) // 10
         l_pair = torch.clamp(l_pair, min=1, max=S_flat.size(2)) 
 
+        # total score
         count = mask_flat.sum(dim=2).clamp(min=1)          # (B,P)
         total_mean = (S_flat * mask_flat).sum(dim=2) / count  # (B,P)   
         
-        top_sum = _masked_topk_sum(S_flat, mask_flat, k_pair, largest=True)
-        bottom_sum = _masked_topk_sum(S_flat, mask_flat, l_pair, largest=False)
+        # top k, bottom l score
+        top_sum = self._masked_topk_sum(S_flat, mask_flat, k_pair, largest=True)
+        bottom_sum = self._masked_topk_sum(S_flat, mask_flat, l_pair, largest=False)
         
         top_mean = top_sum / k_pair.clamp(min=1).to(top_sum.dtype)          # (B,P)
         bottom_mean = bottom_sum / l_pair.clamp(min=1).to(bottom_sum.dtype) # (B,P)
-        bottom_mean = clamp(-bottom_mean, min=0)
+        bottom_mean = torch.clamp(-bottom_mean, min=0)
         
         # reinforce good score and bad score
         sim_list = total_mean + alpha * top_mean - beta * bottom_mean
