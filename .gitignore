@@ -9,4 +9,6 @@ outputs/
 *.out
 importants
 faiss
+projects
+.devcontainer/
 projects/
