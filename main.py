@@ -7,7 +7,7 @@ import logging
 
 import transformers
 
-from models import RiskMCLS_model
+from models.RiskMCLS_model import DPR
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
 
@@ -35,7 +35,7 @@ def with_benchmark(checkout_dir):
     from faiss_benchmark import benchmark
     results.append(benchmark(checkout_dir=checkout_dir))
 
-@hydra.main(config_path="configs", version_base=None)
+@hydra.main(config_path="configs", config_name="config", version_base=None)
 def run(config):
     tf_logger = logging.getLogger("transformers")
     tf_logger.setLevel(logging.INFO)
@@ -45,7 +45,7 @@ def run(config):
     log.info(f"Using device: {device}")
     set_seed(config.seed)
 
-    model = RiskMCLS_model()
+    model = DPR()
     model.to(device)
     log.info("Model built successfully.")
     
