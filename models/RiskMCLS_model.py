@@ -109,7 +109,8 @@ class DPR(nn.Module):
         alpha, beta = self.get_alpha_beta()
         alpha, beta = alpha.to(q_emb.device), beta.to(q_emb.device)
         
-        # get similarity “각 (b,p) 쌍마다 Mq×Mp 점수표”
+        # get similarity 
+        # 모든 query(B) × 모든 passage(P) × 모든 mcls쌍(i,j)을 다 만든 “점수표”
         S = torch.einsum("bih,pjh->bpij", q_emb, p_emb)  # (B,P,Mq,Mp)
 
         # make pair mask
