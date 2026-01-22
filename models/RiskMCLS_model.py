@@ -129,15 +129,19 @@ class DPR(nn.Module):
         k_pair = (4 * n_safe) // 10
         k_pair = torch.clamp(k_pair, min=1, max=S_flat.size(2))
 
-        l_pair = (8 * n_safe) // 10
+        l_pair = (2 * n_safe) // 10
         l_pair = torch.clamp(l_pair, min=1, max=S_flat.size(2)) 
-    
-        top_sum = self._masked_topk_sum(S_flat, mask_flat, k_pair, largest=True)       # (B,P)
-        bottom_sum = self._masked_topk_sum(S_flat, mask_flat, l_pair, largest=False)   # (B,P)
 
+        count = mask_flat.sum(dim=2).clamp(min=1)          # (B,P)
+        total_mean = (S_flat * mask_flat).sum(dim=2) / count  # (B,P)   
+        
+        top_mean = top_sum / k_pair.clamp(min=1).to(top_sum.dtype)          # (B,P)
+        bottom_mean = bottom_sum / l_pair.clamp(min=1).to(bottom_sum.dtype) # (B,P)
+        bottom_mean = max(0, -bottom_mean)
+        
         # reinforce good score and bad score
-        sim_list = alpha * top_sum - beta * bottom_sum                             # (B,P)
-        sim_list = sim_list.masked_fill(~valid_pair, -1e9)  # 혹시 valid=0이면 안전하게 
+        sim_list = total_mean + alpha * top_mean - beta * bottom_mean
+        sim_list = sim_list.masked_fill(~valid_pair, -1e9)
     
         if labels is None:
             labels = torch.arange(sim_list.size(0), device=sim_list.device) 

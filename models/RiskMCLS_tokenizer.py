@@ -8,7 +8,7 @@ def special_token_pos(input_ids, token_id):
             return i
     return len(input_ids)
 
-class CMCLS_tokenizer(nn.Module):
+class RiskMCLS_tokenizer(nn.Module):
     def __init__(self):
         super().__init__() 
         self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
