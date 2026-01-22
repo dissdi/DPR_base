@@ -7,6 +7,8 @@ from dprdataset.nqdataset import read_tsv
 from models import DPR, BaseTokenizer
 from safetensors.torch import load_model
 
+from models.ReRankerModel import ReRankerDPR
+
 def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH="downloads/data/wikipedia_split/psgs_w100.tsv", nlist=4096):
 
     output_path = check_point_dir/"faiss"
@@ -16,7 +18,7 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
     FAISS_INDEX_PATH = output_path / "faiss.index" # To save path
 
 
-    model = DPR()
+    model = ReRankerDPR()
     load_model(model, MODEL_PATH)
     model.to("cuda")
 

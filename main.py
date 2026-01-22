@@ -7,11 +7,13 @@ import logging
 
 import transformers
 
-from models import DPR
+from models import DPR, ReRanker
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
 
 from transformers.trainer_utils import get_last_checkpoint
+
+from models.ReRankerModel import ReRankerDPR
 
 log = logging.getLogger(__name__)
 results = []  # multi run시 결과 한눈에 보기 위해 사용
@@ -45,7 +47,7 @@ def run(config):
     log.info(f"Using device: {device}")
     set_seed(config.seed)
 
-    model = DPR()
+    model = ReRankerDPR()
     model.to(device)
     log.info("Model built successfully.")
     

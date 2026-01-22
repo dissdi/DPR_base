@@ -9,6 +9,7 @@ from dprdataset.nqdataset import load_nq_dataset, valid_collate_fn
 from torch.utils.data import DataLoader
 
 from models import DPR
+from models.ReRankerModel import ReRanker, ReRankerDPR
 
 
 def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 512):
@@ -50,7 +51,7 @@ def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-
     index = faiss.read_index(str(FAISS_INDEX_PATH))
     index.nprobe = NPROBE
 
-    model = DPR()
+    model = ReRankerDPR()
     load_model(model, MODEL_PATH)
     model.to("cuda")
 
