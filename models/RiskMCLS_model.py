@@ -23,8 +23,13 @@ class DPR(nn.Module):
         B, L, H = out.last_hidden_state.shape
         
         # (M,), (1,) -> (1, M), (1, 1)
-        if mcls_positions.dim() == 1:
-            mcls_positions = torch.unsqueeze(mcls_positions, dim=0)
+        if mcls_positions.dim() == 0:
+            mcls_positions = mcls_positions.view(1, 1)
+        elif mcls_positions.dim() == 1:
+            if mcls_positions.numel() == B:
+                mcls_positions = mcls_positions.view(B, 1)   # (B,) -> (B,1)
+            else:
+                mcls_positions = mcls_positions.unsqueeze(0)  # (M,) -> (1,M)
         
         # match batch (1, M) -> (B, M)
         pos_B, M = mcls_positions.shape
@@ -41,7 +46,7 @@ class DPR(nn.Module):
         
         return out.last_hidden_state.gather(dim=1, index=mcls_positions)
 
-    def _masked_topk_sum(S_flat, mask_flat, k_pair, largest: bool):
+    def _masked_topk_sum(self, S_flat, mask_flat, k_pair, largest: bool):
         B, P, D = S_flat.shape
         device = S_flat.device
         dtype = S_flat.dtype
@@ -104,7 +109,7 @@ class DPR(nn.Module):
         alpha, beta = self.get_alpha_beta()
         alpha, beta = alpha.to(q_emb.device), beta.to(q_emb.device)
         
-        # get similarity
+        # get similarity “각 (b,p) 쌍마다 Mq×Mp 점수표”
         S = torch.einsum("bih,pjh->bpij", q_emb, p_emb)  # (B,P,Mq,Mp)
 
         # make pair mask
@@ -127,7 +132,7 @@ class DPR(nn.Module):
         l_pair = (8 * n_safe) // 10
         l_pair = torch.clamp(l_pair, min=1, max=S_flat.size(2)) 
     
-        top_sum = self._masked_topk_sum(S_flat, mask_flat, k_pair, largest=True)        # (B,P)
+        top_sum = self._masked_topk_sum(S_flat, mask_flat, k_pair, largest=True)       # (B,P)
         bottom_sum = self._masked_topk_sum(S_flat, mask_flat, l_pair, largest=False)   # (B,P)
 
         # reinforce good score and bad score
