@@ -4,7 +4,7 @@ import torch
 import faiss
 from tqdm import tqdm
 from dprdataset.nqdataset import read_tsv
-from models import DPR, BaseTokenizer
+from models import DPR, BaseTokenizer, FastTrackModel
 from safetensors.torch import load_model
 
 def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH="downloads/data/wikipedia_split/psgs_w100.tsv", nlist=4096):
@@ -16,7 +16,10 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
     FAISS_INDEX_PATH = output_path / "faiss.index" # To save path
 
 
-    model = DPR()
+    base_model = DPR()
+    tiny_model = FastTrackModel.TinyModel()
+
+    model = FastTrackModel.FastDPR(base_model=base_model, tiny_model=tiny_model)
     load_model(model, MODEL_PATH)
     model.to("cuda")
 

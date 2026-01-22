@@ -78,6 +78,7 @@ def run(config):
     )
 
     last_checkpoint = None
+    log.info("Starting training...")
     trainer.train()
     last_checkpoint = get_last_checkpoint(output_dir)
     log.info(f"Training completed. Last checkpoint: {last_checkpoint}")
