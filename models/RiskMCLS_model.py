@@ -135,9 +135,12 @@ class DPR(nn.Module):
         count = mask_flat.sum(dim=2).clamp(min=1)          # (B,P)
         total_mean = (S_flat * mask_flat).sum(dim=2) / count  # (B,P)   
         
+        top_sum = _masked_topk_sum(S_flat, mask_flat, k_pair, largest=True)
+        bottom_sum = _masked_topk_sum(S_flat, mask_flat, l_pair, largest=False)
+        
         top_mean = top_sum / k_pair.clamp(min=1).to(top_sum.dtype)          # (B,P)
         bottom_mean = bottom_sum / l_pair.clamp(min=1).to(bottom_sum.dtype) # (B,P)
-        bottom_mean = max(0, -bottom_mean)
+        bottom_mean = clamp(-bottom_mean, min=0)
         
         # reinforce good score and bad score
         sim_list = total_mean + alpha * top_mean - beta * bottom_mean
