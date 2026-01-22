@@ -118,8 +118,8 @@ class DPR(nn.Module):
         nq = q_mask.sum(dim=1).to(torch.long)          # (B,)
         np_ = p_mask.sum(dim=1).to(torch.long)         # (P,)
         n_pair = (nq[:, None] * np_[None, :])          # (B,P)
-        valid_pair = n_pair > 0
-        n_safe = n_pair.clamp(min=1)
+        valid_pair = n_pair > 0 
+        n_safe = n_pair.clamp(min=1) 
 
         k_pair = (4 * n_safe) // 10
         k_pair = torch.clamp(k_pair, min=1, max=S_flat.size(2))
@@ -132,12 +132,12 @@ class DPR(nn.Module):
 
         # reinforce good score and bad score
         sim_list = alpha * top_sum - beta * bottom_sum                             # (B,P)
-        sim_list = sim_list.masked_fill(~valid_pair, -1e9)  # 혹시 valid=0이면 안전하게
+        sim_list = sim_list.masked_fill(~valid_pair, -1e9)  # 혹시 valid=0이면 안전하게 
     
         if labels is None:
-            labels = torch.arange(sim_list.size(0), device=sim_list.device)
+            labels = torch.arange(sim_list.size(0), device=sim_list.device) 
 
-        loss = self.loss_fn(sim_list, labels) if return_loss else None
+        loss = self.loss_fn(sim_list, labels) if return_loss else None 
 
         return {
             "loss": loss,
