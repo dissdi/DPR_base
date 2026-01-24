@@ -70,6 +70,11 @@ def run(config):
     log.info(f"Training completed. Last checkpoint: {last_checkpoint}")
 
     if config.benchmark:
+        del model
+        del trainer
+        del args
+        torch.cuda.empty_cache()
+        
         with_benchmark(Path(last_checkpoint))
 
 

@@ -10,3 +10,5 @@ outputs/
 importants
 faiss
 projects
+.devcontainer/
+multirun

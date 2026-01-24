@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from models import DPR
 
 
-def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 256):
+def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 512):
     valid_dataset = load_nq_dataset(dataset_path)
     dataloader = DataLoader(valid_dataset, collate_fn=valid_collate_fn, batch_size=batch_size, shuffle=False, num_workers=6,
                             pin_memory=True,
@@ -41,7 +41,7 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 256):
 from models.DPRModel_alcls import DPR_alcls 
 
 
-def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 768, NPROBE: int = 64):
+def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64):
     FAISS_INDEX_PATH = checkout_dir / 'faiss' / "faiss.index"
     MODEL_PATH = checkout_dir / "model.safetensors"
     Ks = [1, 5, 20, 100]
