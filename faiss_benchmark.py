@@ -9,9 +9,11 @@ from dprdataset.nqdataset import load_nq_dataset, valid_collate_fn
 from torch.utils.data import DataLoader
 
 from models import DPR
+import logging
+log = logging.getLogger(__name__)
 
 
-def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 512):
+def benchmark_recall_k(model, index, dataset_path, k=1, batch_size=512):
     valid_dataset = load_nq_dataset(dataset_path)
     dataloader = DataLoader(valid_dataset, collate_fn=valid_collate_fn, batch_size=batch_size, shuffle=False, num_workers=6,
                             pin_memory=True,
@@ -21,12 +23,13 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 512):
         recall = 0
         N = 0
         for step, batch in enumerate(tqdm.tqdm(dataloader, desc=f"Benchmark Recall@{k}", unit="batch")):
-            #print(batch.keys())
+            # print(batch.keys())
             q_ids = batch["q_input_ids"].to("cuda")
             q_mask = batch["q_attention_mask"].to("cuda")
             q_token_ids = batch["q_token_type_ids"].to("cuda")
 
-            query = model.encode_query(q_ids, q_mask, q_token_ids).cpu().numpy().astype(np.float32)
+            query = model.encode_query(
+                q_ids, q_mask, q_token_ids).cpu().numpy().astype(np.float32)
 
             dist, indices = index.search(query, k)
 
@@ -41,11 +44,12 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 512):
 
 
 def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64):
+    log.info(f"Start benchmark faiss index at {checkout_dir}")
     FAISS_INDEX_PATH = checkout_dir / 'faiss' / "faiss.index"
     MODEL_PATH = checkout_dir / "model.safetensors"
     Ks = [1, 5, 20, 100]
 
-    print("Benchmark Recall@K")
+    log.info("Benchmark Recall@K")
 
     index = faiss.read_index(str(FAISS_INDEX_PATH))
     index.nprobe = NPROBE
@@ -54,11 +58,12 @@ def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-
     load_model(model, MODEL_PATH)
     model.to("cuda")
 
-    results = []
+    results = {}
 
     for k in Ks:
-        results.append(benchmark_recall_k(model, index, DATASET_PATH, k = k, batch_size = BATCH_SIZE))
+        results[k] = benchmark_recall_k(
+            model, index, DATASET_PATH, k=k, batch_size=BATCH_SIZE)
 
-    for k, recall in zip(Ks, results):
-        print(f"Recall@{k}: {recall:.3f}", flush=True)
+    for k, recall in results.items():
+        log.info(f"Recall@{k}: {recall:.3f}")
     return results
