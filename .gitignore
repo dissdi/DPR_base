@@ -7,3 +7,8 @@ importants
 output/
 outputs/
 *.out
+importants
+faiss
+projects
+.devcontainer/
+multirun

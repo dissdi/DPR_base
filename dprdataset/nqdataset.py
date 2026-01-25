@@ -43,7 +43,9 @@ def collate_fn(batch):
     p_mcls_mask = _batch_to_tensor([item["token"]["mcls_mask"] for item in chosen], dtype=bool)
     
     # use most challenging hard-neg
-    chosen = [item["negative_passages"][0] for item in batch]
+    # chosen = [item["negative_passages"][0] for item in batch]
+    # use random hard-neg
+    chosen = [random.choice(item["negative_passages"]) for item in batch]
 
     hn_input_ids = _batch_to_tensor([item["token"]["input_ids"] for item in chosen])
     hn_token_type_ids = _batch_to_tensor([item["token"]["token_type_ids"] for item in chosen])
