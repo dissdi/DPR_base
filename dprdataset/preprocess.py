@@ -3,7 +3,6 @@ import random
 import ijson
 from datasets import Dataset
 
-from models import BaseTokenizer
 from models.RiskMCLS_tokenizer import RiskMCLS_tokenizer
 
 tokenizer = RiskMCLS_tokenizer()
@@ -57,7 +56,7 @@ def nq_preprocess(batch):
     neg_passages_batch = []
 
     for q, pos_ctxs, neg_ctxs in zip(questions, p_ctxs_batch, hn_ctxs_batch):
-        q_token = BaseTokenizer(q, max_length=64, padding="max_length", truncation=True)
+        q_token = tokenizer.q_tokenize(q, max_length=64, padding="max_length", truncation=True)
 
         pos_passages = []
         neg_passages = []
@@ -67,7 +66,7 @@ def nq_preprocess(batch):
         # neg_ctxs = neg_ctxs[:min(len(neg_ctxs), 4)]
 
         for ctx in pos_ctxs:
-            p_token = BaseTokenizer(ctx["title"], ctx["text"], max_length=256, padding="max_length", truncation=True)
+            p_token = tokenizer.p_tokenize(ctx["title"], ctx["text"], max_length=256, padding="max_length", truncation=True)
             pos_passages.append({
                 "passage_id": ctx["passage_id"],
                 "token": p_token
