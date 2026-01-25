@@ -13,7 +13,7 @@ train:
   lr_scheduler_type: linear
   warmup_ratio: 0.1
   max_grad_norm: 2.0
-  per_device_train_batch_size: 128
+  per_device_train_batch_size: 4
   dataloader_num_workers: 4
   dataloader_persistent_workers: True
   dataloader_pin_memory: True
