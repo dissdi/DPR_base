@@ -57,11 +57,12 @@ def run(config):
         report_to=[],
         log_level="info",
         )
-
+    dataset = load_nq_dataset(config["dataset_path"])
+    print(dataset[0]['query'].keys())
     trainer = Trainer(
         model=model,
         args=args,
-        train_dataset=load_nq_dataset(config["dataset_path"]),
+        train_dataset=dataset,
         data_collator=collate_fn,
     )
 

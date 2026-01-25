@@ -2,7 +2,7 @@ project_name: risk_mcls
 
 device: cuda
 seed: 42
-dataset_path: ./downloads/data/nq-train
+dataset_path: ./downloads/data/risk/nq-train
 benchmark: true
 
 train:

@@ -105,6 +105,6 @@ if __name__ == "__main__":
                     num_proc=6,
                     remove_columns=ds.column_names)
 
-        ds.save_to_disk(f'downloads/data/{target}')
+        ds.save_to_disk(f'downloads/data/risk/{target}')
 
     print("Done.")  
