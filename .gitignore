@@ -1,8 +1,13 @@
 .vscode/
 **/__pycache__/**
 downloads/
+faiss
+importants
 **.log
 output/
 outputs/
 *.out
-raw_data/
+importants
+faiss
+projects
+.devcontainer/

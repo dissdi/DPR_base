@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from transformers import AutoModel
 
 
-class DPR(nn.Module):
+class DPR_CosSim(nn.Module):
     def __init__(self, loss_fn = None, dropout_prob = 0.1):
         super().__init__()
         self.q_encoder = AutoModel.from_pretrained("bert-base-uncased")
@@ -19,6 +20,7 @@ class DPR(nn.Module):
             token_type_ids=token_type_ids,
             return_dict=True).last_hidden_state[:, 0, :]
         out = self.dropout(out)
+        out = F.normalize(out, dim=1)
         return out
 
     def encode_passage(self, input_ids = None, attention_mask = None, token_type_ids = None):
@@ -27,6 +29,7 @@ class DPR(nn.Module):
             token_type_ids=token_type_ids,
             return_dict=True).last_hidden_state[:, 0, :]
         out = self.dropout(out)
+        out = F.normalize(out, dim=1)
         return out
 
     def forward(self, 
