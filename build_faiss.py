@@ -4,7 +4,8 @@ import torch
 import faiss
 from tqdm import tqdm
 from dprdataset.nqdataset import read_tsv
-from models import DPR, BaseTokenizer
+from models.RiskMCLS_model import DPR
+from models.RiskMCLS_tokenizer import RiskMCLS_tokenizer
 from safetensors.torch import load_model
 
 def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH="downloads/data/wikipedia_split/psgs_w100.tsv", nlist=4096):
@@ -33,8 +34,7 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
         for steps, batch in enumerate(tqdm(loader, desc="Encoding passages for train", total=STEP, unit="batch"), start=0):
             titles = [item["title"] for item in batch]
             texts = [item["text"] for item in batch]
-            p_token = BaseTokenizer(titles, texts, max_length=256, padding="max_length", truncation=True,
-                                    return_tensors="pt").to("cuda")
+            p_token = RiskMCLS_tokenizer()
             emb = model.encode_passage(**p_token)
             p_embs.append(emb.cpu())
             if steps + 1 >= STEP:
@@ -61,8 +61,7 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
                                       start=0):
             titles = [item["title"] for item in batch]
             texts = [item["text"] for item in batch]
-            p_token = BaseTokenizer(titles, texts, max_length=256, padding="max_length", truncation=True,
-                                    return_tensors="pt").to("cuda")
+            p_token = RiskMCLS_tokenizer()
 
             emb = model.encode_passage(**p_token)
             X = emb.cpu().numpy().astype(np.float32)
@@ -74,3 +73,6 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
     print("Save faiss index to disk")
 
     return FAISS_INDEX_PATH
+
+if __name__ == "__main__":
+    build_faiss_index(Path("./projects/risk_mcls/2026-01-25/23-06-31/checkpoint-13800"), STEP=800)
