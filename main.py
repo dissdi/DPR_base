@@ -16,19 +16,6 @@ from transformers.trainer_utils import get_last_checkpoint
 log = logging.getLogger(__name__)
 results = []  # multi run시 결과 한눈에 보기 위해 사용
 
-#재현성을 위한 seed 고정
-def set_seed(seed):
-    import numpy as np
-    import random
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed) # 멀티 GPU 사용 시
-    np.random.seed(seed)
-    random.seed(seed)
-    # 결정론적 연산을 위한 설정 (필요 시)
-    # torch.backends.cudnn.deterministic = True
-    # torch.backends.cudnn.benchmark = False
-
 def with_benchmark(checkout_dir):
     from build_faiss import build_faiss_index
     faiss_index_path = build_faiss_index(checkout_dir)
@@ -43,7 +30,6 @@ def run(config):
     
     device = torch.device(config.device)
     log.info(f"Using device: {device}")
-    set_seed(config.seed)
 
     model = DPR()
     model.to(device)
@@ -56,6 +42,7 @@ def run(config):
         output_dir=output_dir,
         report_to=[],
         log_level="info",
+        seed=config.seed # instead of set_seed func
         )
 
     trainer = Trainer(

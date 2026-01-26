@@ -6,8 +6,11 @@ from tqdm import tqdm
 from dprdataset.nqdataset import read_tsv
 from models import DPR, BaseTokenizer
 from safetensors.torch import load_model
+from logging import getLogger
+log = getLogger(__name__)
 
 def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH="downloads/data/wikipedia_split/psgs_w100.tsv", nlist=4096):
+    log.info(f'Build faiss index at {check_point_dir}')
 
     output_path = check_point_dir/"faiss"
     output_path.mkdir(parents=True, exist_ok=True)
@@ -22,7 +25,7 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
 
     model.eval()
 
-    print(f"Start encode passages for train")
+    log.info("Start encode passages for train")
 
     qaunt = faiss.IndexFlatIP(768) # Bert CLS Token dim \wo L2 norm (IP = Inner Product)
     index = faiss.IndexIVFFlat(qaunt, 768, nlist, faiss.METRIC_INNER_PRODUCT) # IVF needs train
@@ -41,15 +44,15 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
                 break
         loader.close()
 
-    print("Start IVF index train")
+    log.info("Start IVF index train")
 
     p_embs = torch.cat(p_embs, dim=0)
     x_train = p_embs.numpy().astype(np.float32)
     index.train(x_train)
 
-    print("IVF index train done.")
+    log.info("IVF index train done.")
 
-    print("Start build IVF index")
+    log.info("Start build IVF index")
 
     # \w ChatGPT
     inv = faiss.OnDiskInvertedLists(nlist, index.code_size, str(output_path / "ivf_lists.ondisk"))
@@ -71,6 +74,6 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
         loader.close()
 
     faiss.write_index(index, str(FAISS_INDEX_PATH))
-    print("Save faiss index to disk")
+    log.info("Save faiss index to disk")
 
     return FAISS_INDEX_PATH
