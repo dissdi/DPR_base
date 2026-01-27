@@ -7,6 +7,7 @@ dataset_path: ./downloads/data/nq-train
 benchmark: true
 
 train:
+  seed: ${seed}
   save_strategy: epoch
   save_total_limit: 1
   learning_rate: 1e-5
@@ -25,6 +26,7 @@ train:
   remove_unused_columns: False
   push_to_hub: False
   save_only_model: True
+  disable_tqdm: True
 
 hydra:
   run:
