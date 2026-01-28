@@ -1,7 +1,6 @@
-project_name: dpr_alcls
+project_name: dpr_mixcls
 
 device: cuda
-seed: 42
 dataset_path: ./downloads/data/nq-train
 
 benchmark: true
