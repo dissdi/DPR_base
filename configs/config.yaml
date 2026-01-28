@@ -1,4 +1,4 @@
-project_name: dpr_base
+project_name: alcls
 
 device: cuda
 seed: 42
