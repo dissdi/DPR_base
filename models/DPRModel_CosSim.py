@@ -5,11 +5,12 @@ from transformers import AutoModel
 
 
 class DPR_CosSim(nn.Module):
-    def __init__(self, loss_fn = None, dropout_prob = 0.1):
+    def __init__(self, loss_fn = None, dropout_prob = 0.1, tau = 0.07):
         super().__init__()
         self.q_encoder = AutoModel.from_pretrained("bert-base-uncased")
         self.p_encoder = AutoModel.from_pretrained("bert-base-uncased")
 
+        self.tau = tau
         self.loss_fn = loss_fn if loss_fn is not None else nn.CrossEntropyLoss()
 
         self.dropout = nn.Dropout(dropout_prob)
@@ -47,8 +48,10 @@ class DPR_CosSim(nn.Module):
             hn_emb = self.encode_passage(hn_input_ids, hn_attention_mask, hn_token_type_ids)
             p_emb = torch.cat([p_emb, hn_emb], dim=0)
 
-        # dot product
-        sim_matrix = q_emb @ p_emb.T
+        # ||q_emb|| <= 1
+        # ||p_emb|| <= 1
+        # scale up for train stability
+        sim_matrix = (q_emb @ p_emb.T) / self.tau
 
         if labels is None:
             labels = torch.arange(sim_matrix.size(0), device=sim_matrix.device)
