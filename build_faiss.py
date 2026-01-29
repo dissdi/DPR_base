@@ -49,7 +49,11 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
                 }
                 mcls, mcls_mask = model.encode_passage(**p_token)
                 
-                mcls_mask_ = mcls_mask.unsqueeze(-1).to(mcls.device)
+                mcls_mask_ = mcls_mask
+                if mcls_mask_.dim() == 1:
+                    mcls_mask_ = mcls_mask_.unsqueeze(0)     # (M,) -> (1, M)
+                mcls_mask_ = mcls_mask_.unsqueeze(-1).to(mcls.device)  # (1, M, 1)
+                
                 denom = mcls_mask_.sum(dim=1).clamp(min=1)          # (1, 1)
                 pooled = (mcls * mcls_mask_).sum(dim=1) / denom     # (1, H)   
                              
@@ -90,7 +94,11 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
                 }
                 mcls, mcls_mask = model.encode_passage(**p_token)
 
-                mcls_mask_ = mcls_mask.unsqueeze(-1).to(mcls.device)  # (1, M)               
+                mcls_mask_ = mcls_mask
+                if mcls_mask_.dim() == 1:
+                    mcls_mask_ = mcls_mask_.unsqueeze(0)     # (M,) -> (1, M)
+                mcls_mask_ = mcls_mask_.unsqueeze(-1).to(mcls.device)  # (1, M, 1)
+             
                 denom = mcls_mask_.sum(dim=1).clamp(min=1)          # (1, 1)
                 pooled = (mcls * mcls_mask_).sum(dim=1) / denom     # (1, H)
 
