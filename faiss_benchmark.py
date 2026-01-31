@@ -43,7 +43,7 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 512):
         return recall / N
 
 
-def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64):
+def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/risk/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64):
     FAISS_INDEX_PATH = checkout_dir / 'faiss' / "faiss.index"
     MODEL_PATH = checkout_dir / "model.safetensors"
     Ks = [1, 5, 20, 100]
