@@ -8,7 +8,7 @@ from safetensors.torch import load_model
 from dprdataset.nqdataset import load_nq_dataset, valid_collate_fn
 from torch.utils.data import DataLoader
 
-from models import DPR
+from models import *
 import logging
 log = logging.getLogger(__name__)
 
@@ -41,7 +41,6 @@ def benchmark_recall_k(model, index, dataset_path, k=1, batch_size=512):
                     recall += 1
 
         return recall / N
-from models.DPRModel_alcls import DPR_alcls 
 
 
 def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64):
@@ -55,7 +54,7 @@ def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-
     index = faiss.read_index(str(FAISS_INDEX_PATH))
     index.nprobe = NPROBE
 
-    model = DPR_alcls()
+    model = DPR_mixcls()
     load_model(model, MODEL_PATH)
     model.to("cuda")
 

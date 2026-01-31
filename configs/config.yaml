@@ -4,6 +4,7 @@ device: cuda
 dataset_path: ./downloads/data/nq-train
 
 benchmark: true
+seed: 42
 
 train:
   seed: ${seed}

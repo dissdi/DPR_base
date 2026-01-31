@@ -6,7 +6,7 @@ from hydra.core.hydra_config import HydraConfig
 import logging
 
 import transformers
-from models.DPRModel_alcls import DPR_alcls 
+from models import * 
 from dprdataset.nqdataset import load_nq_dataset, collate_fn
 from transformers import Trainer, TrainingArguments
 
@@ -30,7 +30,7 @@ def run(config):
     device = torch.device(config.device)
     log.info(f"Using device: {device}")
 
-    model = DPR_alcls()
+    model = DPR_mixcls()
     model.to(device)
     log.info("Model built successfully.")
     
@@ -41,7 +41,6 @@ def run(config):
         output_dir=output_dir,
         report_to=[],
         log_level="info",
-        seed=config.seed # instead of set_seed func
         )
 
     trainer = Trainer(

@@ -8,7 +8,7 @@ from models import BaseTokenizer
 from safetensors.torch import load_model
 from logging import getLogger
 log = getLogger(__name__)
-from models.DPRModel_alcls import DPR_alcls 
+from models import *
 
 def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH="downloads/data/wikipedia_split/psgs_w100.tsv", nlist=4096):
     log.info(f'Build faiss index at {check_point_dir}')
@@ -20,7 +20,7 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
     FAISS_INDEX_PATH = output_path / "faiss.index" # To save path
 
 
-    model = DPR_alcls()
+    model = DPR_mixcls()
     load_model(model, MODEL_PATH)
     model.to("cuda")
 
