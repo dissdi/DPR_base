@@ -1,5 +1,6 @@
 from anyio import Path
 import numpy as np
+from regex import R
 import torch
 import tqdm
 import faiss
@@ -8,7 +9,7 @@ from safetensors.torch import load_model
 from dprdataset.nqdataset import load_nq_dataset, valid_collate_fn
 from torch.utils.data import DataLoader
 
-from models import DPR
+from models.RiskMCLS_model import DPR
 
 
 def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 512):
@@ -62,3 +63,6 @@ def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-
     for k, recall in zip(Ks, results):
         print(f"Recall@{k}: {recall:.3f}", flush=True)
     return results
+
+if __name__ == "__main__":
+    benchmark(Path('./projects/risk_mcls/2026-01-28/22-25-28/checkpoint-13800'))

@@ -115,4 +115,4 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
     return FAISS_INDEX_PATH
 
 if __name__ == "__main__":
-    build_faiss_index(Path("./projects/risk_mcls/2026-01-25/23-06-31/checkpoint-13800"), STEP=800)
+    build_faiss_index(Path("./projects/risk_mcls/2026-01-28/22-25-28/checkpoint-13800"), STEP=800)
