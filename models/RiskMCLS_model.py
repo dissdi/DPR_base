@@ -22,6 +22,13 @@ class DPR(nn.Module):
     def gather_positions(self, out, mcls_positions):
         B, L, H = out.last_hidden_state.shape
         
+        # if mcls_positions == None (query)
+        if mcls_positions is None:
+            B = out.last_hidden_state.size(0)
+            mcls = out.last_hidden_state[:, 0:1, :]              # (B, 1, H)
+            mcls_mask = torch.ones((B, 1), dtype=torch.bool, device=out.last_hidden_state.device)
+            return mcls, mcls_mask
+        
         # (M,), (1,) -> (1, M), (1, 1)
         if mcls_positions.dim() == 0:
             mcls_positions = mcls_positions.view(1, 1)
@@ -72,6 +79,8 @@ class DPR(nn.Module):
             token_type_ids=token_type_ids,
             return_dict=True)
         mcls = self.gather_positions(out, mcls_positions)
+        if isinstance(mcls, tuple): # if batch is benchmark
+            return mcls
         mcls_mask = mcls_mask.to(device=out.last_hidden_state.device, dtype=torch.bool)
         return mcls, mcls_mask
         

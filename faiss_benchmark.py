@@ -26,10 +26,8 @@ def benchmark_recall_k(model, index, dataset_path, k = 1, batch_size = 512):
             q_ids = batch["q_input_ids"].to("cuda")
             q_mask = batch["q_attention_mask"].to("cuda")
             q_token_ids = batch["q_token_type_ids"].to("cuda")
-            q_mcls_positions = batch["q_mcls_positions"].to("cuda")
-            q_mcls_mask = batch["q_mcls_mask"].to("cuda")
             
-            query = model.encode_query(q_ids, q_mask, q_token_ids, q_mcls_positions, q_mcls_mask).cpu().numpy().astype(np.float32)
+            query = model.encode_query(q_ids, q_mask, q_token_ids, None, None).cpu().numpy().astype(np.float32)
 
             dist, indices = index.search(query, k)
 
