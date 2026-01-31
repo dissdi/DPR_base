@@ -94,8 +94,8 @@ def nq_preprocess(batch):
 
 if __name__ == "__main__":
     #python -m datasets.preprocess
-    tragets = ['nq-dev', 'nq-train']
-    for target in tragets:
+    targets = ['nq-dev', 'nq-train']
+    for target in targets:
         print(f"Preprocessing {target} dataset...")
         ds = Dataset.from_generator(nq_generator, gen_kwargs={
                                     "file_path": f'downloads/data/retriever/{target}.json'})
@@ -108,4 +108,4 @@ if __name__ == "__main__":
 
         ds.save_to_disk(f'downloads/data/{target}')
 
-    print("Done.")  
+    print("Done.")
