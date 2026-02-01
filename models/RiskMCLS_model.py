@@ -71,8 +71,11 @@ class DPR(nn.Module):
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True)
-        mcls = self.gather_positions(out, mcls_positions)
-        mcls_mask = mcls_mask.to(device=out.last_hidden_state.device, dtype=torch.bool)
+        mcls = out.last_hidden_state[:, 0:1, :]
+        if mcls_mask is None: 
+            mcls_mask = torch.ones((mcls.size(0), 1), device=out.last_hidden_state.device, dtype=torch.bool) 
+        else: 
+            mcls_mask = mcls_mask.to(device=out.last_hidden_state.device, dtype=torch.bool)
         return mcls, mcls_mask
         
     def encode_passage(self, input_ids = None, attention_mask = None, token_type_ids = None, mcls_positions = None, mcls_mask = None):
