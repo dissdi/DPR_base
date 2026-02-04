@@ -3,7 +3,9 @@ project_name: dpr_mixcls
 device: cuda
 dataset_path: ./downloads/data/nq-train
 
-benchmark: true
+benchmark: false
+
+statistic: true
 
 train:
   save_strategy: epoch

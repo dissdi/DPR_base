@@ -31,36 +31,40 @@ class DPR_mixcls(nn.Module):
                                 return_dict=True).hidden_states[(13 - self.mix_layer):13]  # bert-base is 12 layer
 
         cls_layers = [h[:, 0, :] for h in layers]
-        
         mixed_cls, _ = self.layer_mix(cls_layers)
         
-        return F.normalize(mixed_cls, dim=1)
+        return F.normalize(mixed_cls, dim=1), None
 
 
-    def encode_passage(self, input_ids=None, attention_mask=None, token_type_ids=None):
+    def encode_passage(self, input_ids=None, attention_mask=None, token_type_ids=None, statistic_mode=False):
         layers = self.p_encoder(input_ids=input_ids,
                                 attention_mask=attention_mask,
                                 token_type_ids=token_type_ids,
-                                return_dict=True).hidden_states[(13 - self.mix_layer):13]  # bert-base is 12 layer
+                                return_dict=True,
+                                output_hidden_states=True).hidden_states[(13 - self.mix_layer):13]  # bert-base is 12 layer
 
         cls_layers = [h[:, 0, :] for h in layers]
         mixed_cls, _ = self.layer_mix(cls_layers)
         
-        return F.normalize(mixed_cls, dim=1)
+        if statistic_mode:
+            return F.normalize(mixed_cls, dim=1), cls_layers
+        else:
+            return F.normalize(mixed_cls, dim=1), None
 
     def forward(self,
                 q_input_ids=None, q_attention_mask=None, q_token_type_ids=None,
                 p_input_ids=None, p_attention_mask=None, p_token_type_ids=None,
                 hn_input_ids=None, hn_attention_mask=None, hn_token_type_ids=None,
+                statistic_mode=False,
                 labels=None, return_loss=True):
 
         # query, passage encode
         q_emb = self.encode_query(q_input_ids, q_attention_mask, q_token_type_ids)
-        p_emb = self.encode_passage(p_input_ids, p_attention_mask, p_token_type_ids)
+        p_emb, p_cls_layers = self.encode_passage(p_input_ids, p_attention_mask, p_token_type_ids)
 
         # if hard-negative is given encode negative and concat p_emb, hn_emb
         if hn_input_ids is not None:
-            hn_emb = self.encode_passage(hn_input_ids, hn_attention_mask, hn_token_type_ids)
+            hn_emb, _ = self.encode_passage(hn_input_ids, hn_attention_mask, hn_token_type_ids)
             p_emb = torch.cat([p_emb, hn_emb], dim=0)
 
         sim_matrix = (q_emb @ p_emb.T) / self.tau
@@ -72,7 +76,8 @@ class DPR_mixcls(nn.Module):
 
         return {
             "loss": loss,
-            "logits": sim_matrix
+            "logits": sim_matrix,
+            "cls_layers": p_cls_layers
         }
 
 
