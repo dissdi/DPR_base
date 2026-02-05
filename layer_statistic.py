@@ -5,6 +5,9 @@ import torch
 from torch.utils.data import Dataset
 from safetensors.torch import load_model
 import tqdm
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 from models import DPR_mixcls
 
@@ -103,39 +106,55 @@ def get_layer_statistics(checkout_dir, dataloader, device="cuda"):
     model.to(device)
     model.eval()
 
-    sum_var = None
-    best_counts = None
-    n_total = 0
+    sum_var_lh = None   # (L-1, H)
+    n_steps = 0
 
     with torch.no_grad():
-        for batch in tqdm.tqdm(dataloader, desc="Layer statistics", unit="batch"):
+        for batch in tqdm.tqdm(dataloader, desc="Residual layer statistics", unit="batch"):
             ids = batch["p_input_ids"].to(device)
             mask = batch["p_attention_mask"].to(device)
             tt = batch["p_token_type_ids"].to(device)
 
-            _, cls_layers = model.encode_passage(ids, mask, tt, statistic_mode=True)  # cls_layers: list of (B,H)
-            cls_stack = torch.stack(cls_layers, dim=1)  # (B,L,H)
+            # cls_layers: list of (B, H)
+            outputs = model.p_encoder(
+                input_ids=ids,
+                attention_mask=mask,
+                token_type_ids=tt,
+                output_hidden_states=True,
+                return_dict=True,
+            )
+            hidden_states = outputs.hidden_states[1:]      # 12개 레이어 (embedding 제외)
+            cls_layers = [h[:, 0, :] for h in hidden_states]  # 각 (B, H)
+            cls_stack = torch.stack(cls_layers, dim=1)     # (B, 12, H)
+            
+            # (B, L, H)
+            cls_stack = torch.stack(cls_layers, dim=1)
 
-            var_bl = cls_stack.var(dim=-1, unbiased=False)  # (B,L)
-            best = var_bl.argmax(dim=-1)                    # (B,)
+            # residual: (B, L-1, H) where delta[:, i] = CLS_{i+1} - CLS_{i}
+            delta = cls_stack[:, 1:, :] - cls_stack[:, :-1, :]
 
-            B, L = var_bl.shape
-            if sum_var is None:
-                sum_var = torch.zeros(L, dtype=torch.float64)
-                best_counts = torch.zeros(L, dtype=torch.long)
+            # variance over batch dimension -> (L-1, H)
+            var_lh = delta.var(dim=0, unbiased=False).detach().cpu()
 
-            sum_var += var_bl.double().sum(dim=0).cpu()
-            best_counts += torch.bincount(best.cpu(), minlength=L)
-            n_total += B
+            if sum_var_lh is None:
+                sum_var_lh = torch.zeros_like(var_lh)
 
-    mean_var = (sum_var / n_total).tolist()
-    best_ratio = (best_counts.double() / n_total).tolist()
+            sum_var_lh += var_lh
+            n_steps += 1
 
-    return [
-        {"layer": i, "mean_cls_var": float(mean_var[i]), "best_ratio": float(best_ratio[i]), "n": int(n_total)}
-        for i in range(len(mean_var))
-    ]
+    mean_var_lh = (sum_var_lh / n_steps)  # (L-1, H)
 
+    results = []
+    Lm1, H = mean_var_lh.shape
+    for i in range(Lm1):
+        for h in range(H):
+            results.append({
+                "delta_layer": i,   # i=0 means layer1-layer0
+                "dim": h,
+                "var": float(mean_var_lh[i, h]),
+            })
+
+    return results
 
 def save_result(result, out_dir):
     out_dir = Path(out_dir)
@@ -149,13 +168,71 @@ def save_result(result, out_dir):
 
     return str(out_path)
 
+
+def make_heatmap_line_robust(
+    csv_path="analysis_outputs/layer_statistics.csv",
+    out_png="analysis_outputs/var_heatmap_layersxH_robust.png",
+    n_layers=11,   # residual이면 11개가 맞음
+    H=768,
+    layer_col="delta_layer",
+    var_col="var",
+    low_q=1.0,
+    high_q=99.0,
+):
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    df = pd.read_csv(csv_path)
+
+    # robust vmin/vmax
+    vals = df[var_col].to_numpy(dtype=np.float32)
+    vals = vals[np.isfinite(vals)]
+    vmin = np.percentile(vals, low_q)
+    vmax = np.percentile(vals, high_q)
+
+    # (n_layers, H) 매트릭스로 모으기
+    mat = np.full((n_layers, H), np.nan, dtype=np.float32)
+    for l in range(n_layers):
+        sub = df[df[layer_col] == l]
+        if sub.empty:
+            continue
+        dims = sub["dim"].to_numpy(dtype=int)
+        mat[l, dims] = sub[var_col].to_numpy(dtype=np.float32)
+
+    # nan은 vmin으로 채우거나 그대로 두고 clip
+    mat = np.nan_to_num(mat, nan=vmin)
+    mat = np.clip(mat, vmin, vmax)
+
+    # 그림: 세로 11줄, 가로 768
+    fig, ax = plt.subplots(figsize=(18, 6))  # 가로 길게
+    im = ax.imshow(mat, aspect="auto", interpolation="nearest", vmin=vmin, vmax=vmax)
+
+    ax.set_title("Per-dim variance (residual) — layers × hidden-dim (robust)")
+    ax.set_xlabel("hidden dim (0..H-1)")
+    ax.set_ylabel("delta layer (CLS_{t} - CLS_{t-1})")
+
+    # y축 눈금: 0..10
+    ax.set_yticks(np.arange(n_layers))
+
+    cbar = fig.colorbar(im, ax=ax, shrink=0.9)
+    cbar.set_label(f"Var (clipped {low_q}–{high_q} pct)")
+
+    fig.tight_layout()
+    os.makedirs(os.path.dirname(out_png) or ".", exist_ok=True)
+    fig.savefig(out_png, dpi=200)
+    plt.close(fig)
+
+    print("saved:", out_png, "| vmin:", vmin, "vmax:", vmax)
+
 if __name__ == "__main__":
     from transformers import AutoTokenizer
     from torch.utils.data import DataLoader
     
     print("sampling w100")
-    sample_path = make_sample_w100(r"downloads\data\wikipedia_split\psgs_w100.tsv", 10000)
-    # sample_path = r"downloads\data\wikipedia_split\psgs_w100.sample10000.tsv"
+    # sample_path = make_sample_w100(r"downloads\data\wikipedia_split\psgs_w100.tsv", 10000)
+    sample_path = r"downloads\data\wikipedia_split\psgs_w100.sample10000.tsv"
     print("sampling complete")
     
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
@@ -171,3 +248,6 @@ if __name__ == "__main__":
     print("saving result")
     save_result(res, "analysis_outputs")
     print("complete")
+    
+    print("make heatmap")
+    make_heatmap_line_robust()
