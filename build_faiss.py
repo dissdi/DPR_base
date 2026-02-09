@@ -10,7 +10,7 @@ from logging import getLogger
 log = getLogger(__name__)
 from models import *
 
-def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH="downloads/data/wikipedia_split/psgs_w100.tsv", nlist=4096):
+def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH="downloads/data/wikipedia_split/psgs_w100.tsv", nlist=4096, model_config=None):
     log.info(f'Build faiss index at {check_point_dir}')
 
     output_path = check_point_dir/"faiss"
@@ -20,7 +20,7 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
     FAISS_INDEX_PATH = output_path / "faiss.index" # To save path
 
 
-    model = DPR_mixcls()
+    model = DPR_mixcls(**model_config) if model_config is not None else DPR_mixcls()
     load_model(model, MODEL_PATH)
     model.to("cuda")
 
@@ -78,3 +78,6 @@ def build_faiss_index(check_point_dir: Path, BATCH_SIZE=512, STEP=800, PSGS_PATH
     log.info("Save faiss index to disk")
 
     return FAISS_INDEX_PATH
+
+if __name__ == "__main__":
+    build_faiss_index(Path("projects/dpr_mixcls/2026-02-04/11-37-27/checkpoint-13800"), model_config={"mix_layer":2})

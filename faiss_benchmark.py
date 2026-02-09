@@ -43,7 +43,7 @@ def benchmark_recall_k(model, index, dataset_path, k=1, batch_size=512):
         return recall / N
 
 
-def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64):
+def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-dev", BATCH_SIZE: int = 256, NPROBE: int = 64, model_config=None):
     log.info(f"Start benchmark faiss index at {checkout_dir}")
     FAISS_INDEX_PATH = checkout_dir / 'faiss' / "faiss.index"
     MODEL_PATH = checkout_dir / "model.safetensors"
@@ -54,7 +54,7 @@ def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-
     index = faiss.read_index(str(FAISS_INDEX_PATH))
     index.nprobe = NPROBE
 
-    model = DPR_mixcls()
+    model = DPR_mixcls(**model_config) if model_config is not None else DPR_mixcls()
     load_model(model, MODEL_PATH)
     model.to("cuda")
 
@@ -66,4 +66,14 @@ def benchmark(checkout_dir: Path = None, DATASET_PATH: str = "downloads/data/nq-
 
     for k, recall in results.items():
         log.info(f"Recall@{k}: {recall:.3f}")
+    print(f"Benchmark results at {checkout_dir}: {results}")
     return results
+
+if __name__ == "__main__":
+    import sys
+    # 로그가 콘솔에 찍히도록 기본 설정
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    log.info("Starting faiss benchmark script...")
+    print("Running faiss benchmark...", flush=True)
+    result = benchmark(Path("projects/dpr_mixcls/2026-02-04/11-37-27/checkpoint-13800"), model_config={"mix_layer":8}, BATCH_SIZE=256)
+    print(result, flush=True)
